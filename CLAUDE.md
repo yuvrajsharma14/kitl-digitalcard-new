@@ -128,7 +128,7 @@ Digital Card New/
 |---|---|---|
 | 1 | Project scaffolding (Turborepo, Docker, Next.js, Prisma) | ✅ Done |
 | 2 | Database schema + Prisma setup | ✅ Done |
-| 3 | Authentication (signup, login, Google OAuth, email verification) | ⬜ Next |
+| 3 | Authentication (signup, login, Google OAuth, email verification) | ✅ Done |
 | 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
 | 5 | User Portal — Card Builder | ⬜ Pending |
 | 6 | User Portal — Dashboard & Settings | ⬜ Pending |
@@ -147,6 +147,14 @@ Digital Card New/
 - NextAuth.js v5 wired (credentials + Google), middleware protecting all routes
 - Zod validation schemas for auth and card
 - Shared TypeScript types + constants in `packages/shared`
+
+**Authentication** (`/login`, `/signup`, `/forgot-password`, `/reset-password`)
+- `LoginForm` — email/password + Google OAuth, role-based redirect (ADMIN → /admin, USER → /dashboard)
+- `ForgotPasswordForm` — sends reset email via Resend, success state UI
+- `ResetPasswordForm` — token validation, password update with rules hint, auto-redirect
+- Server actions in `lib/actions/auth.ts` — loginAction, signupAction, forgotPasswordAction, resetPasswordAction
+- Auth layout — split two-panel (branding left, form right)
+- Middleware updated — protects /admin, /dashboard, /card, /settings; redirects logged-in users away from auth pages
 
 **Admin Portal** (`/admin/*`)
 - `AdminSidebar` — dark sidebar, responsive (Sheet drawer on mobile)
@@ -190,4 +198,4 @@ Digital Card New/
 
 ---
 
-*Last updated: 2026-04-16 — Admin Portal complete*
+*Last updated: 2026-04-16 — Admin Portal + Authentication complete*

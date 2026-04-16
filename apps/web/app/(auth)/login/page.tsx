@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { LoginForm } from "@/components/auth/LoginForm";
 
-export const metadata: Metadata = { title: "Login" };
+export const metadata: Metadata = { title: "Sign In" };
 
 export default function LoginPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6 text-center">Welcome back</h1>
-      {/* Login form — coming soon */}
-    </div>
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

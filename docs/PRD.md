@@ -52,16 +52,16 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 
 ---
 
-### 4.2 User Authentication ⬜
+### 4.2 User Authentication ✅
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | Sign up with email + password | Must Have | ⬜ |
-| 2 | Login with email + password | Must Have | ⬜ |
-| 3 | Google OAuth login | Should Have | ⬜ |
-| 4 | Forgot password / reset password | Must Have | ⬜ |
-| 5 | Email verification on sign up | Should Have | ⬜ |
-| 6 | Persistent session (remember me) | Should Have | ⬜ |
+| 1 | Sign up with email + password | Must Have | ✅ |
+| 2 | Login with email + password | Must Have | ✅ |
+| 3 | Google OAuth login | Should Have | ✅ |
+| 4 | Forgot password / reset password | Must Have | ✅ |
+| 5 | Email verification on sign up | Should Have | ✅ |
+| 6 | Persistent session (remember me) | Should Have | ✅ |
 
 ---
 
@@ -160,7 +160,7 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 ### Phase 1 — Web (Current)
 - ✅ Project scaffolding (Turborepo monorepo, Docker, Next.js 14, Prisma)
 - ✅ Admin portal (dashboard, user management, card management)
-- ⬜ User authentication (signup, login, Google OAuth, password reset)
+- ✅ Authentication (login, Google OAuth, forgot/reset password, email verification)
 - ⬜ Card builder + sharing (QR code, link, vCard)
 - ⬜ User dashboard & settings
 - ⬜ Public landing page
