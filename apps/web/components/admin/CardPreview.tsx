@@ -56,7 +56,7 @@ function makeLogoSvg(accentHex: string, onDark = false): string {
     `<rect width="96" height="34" rx="7" fill="${bg}" stroke="${bdr}" stroke-width="1.2"/>` +
     `<circle cx="17" cy="17" r="8" fill="rgba(255,255,255,0.22)"/>` +
     `<text x="58" y="22" font-size="11.5" fill="${fg}" text-anchor="middle" ` +
-    `font-family="system-ui,sans-serif" font-weight="700" letter-spacing="1.5">ACME</text>` +
+    `font-family="system-ui,sans-serif" font-weight="700" letter-spacing="1.5">KIT</text>` +
     `</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
@@ -77,11 +77,6 @@ const SAMPLE_URL = "https://mydigitalcard.app/u/alex-johnson";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
-function qrFg(bg: string): string {
-  const lights = ["#ffffff", "#fafaf9", "#f1f5f9", "#fef3c7", "#fef08a", "#fefce8"];
-  return lights.includes(bg.toLowerCase()) ? "#1a1a1a" : bg;
-}
-
 function isLight(hex: string): boolean {
   if (!hex.startsWith("#") || hex.length < 7) return false;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -101,7 +96,7 @@ export function CardPreview({
   size          = "sm",
   sampleName    = "Alex Johnson",
   sampleTitle   = "Senior Product Designer",
-  sampleCompany = "Acme Corp",
+  sampleCompany = "KITLabs Inc.",
   sampleTagline = "Building products people love.",
   sampleUrl     = SAMPLE_URL,
 }: CardPreviewProps) {
@@ -112,7 +107,6 @@ export function CardPreview({
 
   const f = resolveFields(config.fields);
 
-  const qrSz = lg ? 60 : 38;
   const maxW = lg ? "w-[370px]" : "w-[260px]";
 
   // Layout-specific banner URL
@@ -158,7 +152,7 @@ export function CardPreview({
 
     return (
       <div
-        className={`rounded-full overflow-hidden shrink-0 ${cls ?? ""}`}
+        className={`rounded-full overflow-hidden shrink-0 relative ${cls ?? ""}`}
         style={{ boxShadow: shadow }}
       >
         <img
@@ -220,32 +214,6 @@ export function CardPreview({
     </div>
   );
 
-  /** QR code block. */
-  const Qr = ({ center = false }: { center?: boolean }) => (
-    <div className={`flex ${center ? "justify-center" : "justify-end"} items-end gap-1.5`}>
-      {center && (
-        <span className="text-[8px] opacity-30 self-center leading-tight text-right">
-          Scan to<br />connect
-        </span>
-      )}
-      <div>
-        {!center && <p className="text-[8px] opacity-25 text-right mb-0.5">Scan</p>}
-        <div
-          className="rounded-lg p-1"
-          style={{ backgroundColor: "#ffffff", border: `1.5px solid ${accentColor}28` }}
-        >
-          <QRCodeSVG
-            value={sampleUrl}
-            size={qrSz}
-            fgColor={qrFg(textColor)}
-            bgColor="transparent"
-            level="M"
-          />
-        </div>
-      </div>
-    </div>
-  );
-
   // Active socials
   const SOCIAL_DEFS: { key: keyof TemplateFields; Icon: React.ElementType }[] = [
     { key: "linkedin",  Icon: Linkedin  },
@@ -274,9 +242,9 @@ export function CardPreview({
 
   // Active contact items
   const contacts = [
-    { key: "email"   as const, Icon: Mail,  label: "alex@acmecorp.com" },
-    { key: "phone"   as const, Icon: Phone, label: "+1 (415) 555-0192" },
-    { key: "website" as const, Icon: Globe, label: "acmecorp.com"       },
+    { key: "email"   as const, Icon: Mail,  label: "alex@kitlabs.com"  },
+    { key: "phone"   as const, Icon: Phone, label: "+1 (415) 555-0192"  },
+    { key: "website" as const, Icon: Globe, label: "kitlabs.com"         },
   ].filter(({ key }) => f[key]);
 
   const Contacts = ({
@@ -418,9 +386,13 @@ export function CardPreview({
 
     frontCard = (
       <div style={cardSty} className={`w-full rounded-2xl shadow-lg overflow-hidden border border-black/[0.06] ${pad}`}>
-        {f.banner && <Banner banH={lg ? "h-12" : "h-9"} neg />}
+        {f.banner && (
+          <div className={lg ? "-mx-6 -mt-6 mb-4" : "-mx-4 -mt-4 mb-4"}>
+            <Banner banH={lg ? "h-12" : "h-9"} />
+          </div>
+        )}
         {(f.logo || f.headshot) && (
-          <div className={`flex items-start justify-between ${f.banner ? "mt-4 mb-4" : "mb-4"}`}>
+          <div className="flex items-start justify-between mb-4">
             {f.logo ? <Logo cls={lg ? "h-10 w-20" : "h-7 w-14"} /> : <div />}
             {f.headshot && <Headshot cls={`${hsW} rounded-2xl`} />}
           </div>
