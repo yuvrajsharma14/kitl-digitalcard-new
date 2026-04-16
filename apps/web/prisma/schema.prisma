@@ -1,0 +1,175 @@
+// This is your Prisma schema file
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SocialPlatform {
+  LINKEDIN
+  TWITTER
+  INSTAGRAM
+  FACEBOOK
+  GITHUB
+  YOUTUBE
+  TIKTOK
+  OTHER
+}
+
+// ─────────────────────────────────────────
+// User
+// ─────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String?
+  role          Role      @default(USER)
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cards    Card[]
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// Card
+// ─────────────────────────────────────────
+
+model Card {
+  id          String   @id @default(cuid())
+  userId      String
+  slug        String   @unique
+  displayName String
+  jobTitle    String?
+  company     String?
+  bio         String?
+  email       String?
+  phone       String?
+  website     String?
+  avatarUrl   String?
+  theme       String   @default("default")
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialLinks SocialLink[]
+  analytics   CardAnalytics?
+  views       CardView[]
+
+  @@index([userId])
+  @@map("cards")
+}
+
+// ─────────────────────────────────────────
+// SocialLink
+// ─────────────────────────────────────────
+
+model SocialLink {
+  id       String         @id @default(cuid())
+  cardId   String
+  platform SocialPlatform
+  url      String
+  order    Int            @default(0)
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@map("social_links")
+}
+
+// ─────────────────────────────────────────
+// Analytics
+// ─────────────────────────────────────────
+
+model CardAnalytics {
+  id          String   @id @default(cuid())
+  cardId      String   @unique
+  totalViews  Int      @default(0)
+  totalClicks Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("card_analytics")
+}
+
+model CardView {
+  id        String   @id @default(cuid())
+  cardId    String
+  viewedAt  DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([viewedAt])
+  @@map("card_views")
+}
+
+// ─────────────────────────────────────────
+// NextAuth Models
+// ─────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
