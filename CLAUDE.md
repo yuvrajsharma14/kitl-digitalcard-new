@@ -1,0 +1,167 @@
+# CLAUDE.md — My Digital Card
+
+This file gives Claude (AI assistant) full context about this project so it can assist effectively across all conversations.
+
+---
+
+## Project Overview
+
+**Product Name:** My Digital Card  
+**Type:** Web + Hybrid Mobile Application  
+**Purpose:** Free app to create, manage, and share digital business cards — replacing traditional physical business cards  
+**Owner:** Yuvraj Sharma (solo developer)  
+**Status:** Active development — Phase 1 (Web)
+
+---
+
+## Tech Stack
+
+### Web (Phase 1 — Current)
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| Forms | React Hook Form + Zod |
+| State | Zustand |
+| Auth | NextAuth.js v5 |
+| ORM | Prisma |
+| Database | PostgreSQL 15 |
+| Cache | Redis |
+| File Storage | Cloudinary |
+| Email | Resend |
+| QR Code | qrcode.react |
+
+### Mobile (Phase 2 — Future)
+| Layer | Technology |
+|---|---|
+| Framework | React Native + Expo |
+| Navigation | Expo Router |
+| Styling | NativeWind |
+
+### Infrastructure
+| Layer | Technology |
+|---|---|
+| Local Dev | Docker + Docker Compose |
+| Deployment | Vercel (web) |
+| Database Hosting | Railway |
+| Monorepo | Turborepo |
+
+---
+
+## Project Structure
+
+```
+Digital Card New/
+├── apps/
+│   ├── web/               # Next.js app (all web surfaces)
+│   └── mobile/            # React Native + Expo (Phase 2)
+├── packages/
+│   └── shared/            # Shared types and utilities
+├── docs/
+│   ├── BRD.md             # Business Requirements
+│   ├── PRD.md             # Product Requirements
+│   ├── TRD.md             # Technical Requirements
+│   ├── ARCHITECTURE.md    # System architecture
+│   └── DATABASE.md        # Database schema
+├── docker-compose.yml     # Local dev environment
+├── CLAUDE.md              # This file
+└── README.md              # Developer setup
+```
+
+---
+
+## Application Surfaces
+
+| Surface | Route | Auth Required |
+|---|---|---|
+| Public Landing Page | `/` | No |
+| Shared Card View | `/u/[username]` | No (guest access) |
+| Login / Signup | `/login`, `/signup` | No (redirect if logged in) |
+| User Dashboard | `/dashboard` | Yes (USER role) |
+| Card Builder | `/card/new`, `/card/[id]/edit` | Yes (USER role) |
+| User Settings | `/settings` | Yes (USER role) |
+| Admin Portal | `/admin/*` | Yes (ADMIN role) |
+
+---
+
+## Key Conventions
+
+- **TypeScript everywhere** — no plain JS files
+- **Server Components by default** — use `"use client"` only when needed (forms, interactivity)
+- **Zod for all validation** — both client and API side
+- **Prisma for all DB queries** — no raw SQL
+- **shadcn/ui for components** — don't build UI from scratch
+- **API routes under `/api/v1/`** — versioned from the start
+- **Environment variables** — never hardcode secrets, always use `.env.local`
+
+---
+
+## Database Models (Summary)
+
+| Model | Description |
+|---|---|
+| User | Registered users (role: USER or ADMIN) |
+| Card | Digital business cards (slug = public URL) |
+| SocialLink | Social media links on a card |
+| CardAnalytics | Aggregated view/click counts per card |
+| CardView | Individual view events (time-series) |
+| Account | OAuth accounts (NextAuth) |
+| Session | Active sessions (NextAuth) |
+| VerificationToken | Email/password reset tokens |
+
+---
+
+## User Roles
+
+| Role | Access |
+|---|---|
+| Guest | Landing page, view shared cards |
+| USER | Create/manage own cards, dashboard, settings |
+| ADMIN | Full admin portal, user management, platform analytics |
+
+---
+
+## Build Order (Phase 1)
+
+1. Project scaffolding (monorepo, Docker, Next.js, Prisma)
+2. Database setup and migrations
+3. Authentication (signup, login, Google OAuth, email verification)
+4. Admin Portal (dashboard, user management, card management)
+5. User Portal — Card Builder
+6. User Portal — Dashboard & Settings
+7. Public pages — Landing page, shared card view
+8. QR code generation
+9. vCard download
+10. Analytics
+
+---
+
+## Important Notes for Claude
+
+- This is a **solo developer project** — keep solutions simple and maintainable
+- **Do not over-engineer** — no microservices, no separate backend, keep it in Next.js
+- **Do not add features** beyond what is in the PRD without asking
+- Always check `docs/PRD.md` for feature scope before implementing
+- Always check `docs/DATABASE.md` before modifying the Prisma schema
+- Always check `docs/TRD.md` for tech decisions before suggesting alternatives
+- **Mobile is Phase 2** — do not build mobile code until Phase 1 web is complete
+- The project lives at: `/Users/yuvrajsharma/Documents/GitHub/Digital Card New/`
+
+---
+
+## Documentation Files
+
+| File | Purpose |
+|---|---|
+| `docs/BRD.md` | Business goals, target users, success metrics |
+| `docs/PRD.md` | Features, user stories, roadmap, priorities |
+| `docs/TRD.md` | Tech stack, API design, security, env vars |
+| `docs/ARCHITECTURE.md` | System design, component structure, data flow |
+| `docs/DATABASE.md` | Full Prisma schema, ERD, table definitions |
+| `CLAUDE.md` | This file — Claude's project context |
+| `README.md` | Local setup instructions |
+
+---
+
+*Last updated: 2026-04-16*
