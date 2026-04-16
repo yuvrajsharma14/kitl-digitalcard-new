@@ -122,18 +122,44 @@ Digital Card New/
 
 ---
 
-## Build Order (Phase 1)
+## Build Progress (Phase 1)
 
-1. Project scaffolding (monorepo, Docker, Next.js, Prisma)
-2. Database setup and migrations
-3. Authentication (signup, login, Google OAuth, email verification)
-4. Admin Portal (dashboard, user management, card management)
-5. User Portal — Card Builder
-6. User Portal — Dashboard & Settings
-7. Public pages — Landing page, shared card view
-8. QR code generation
-9. vCard download
-10. Analytics
+| # | Task | Status |
+|---|---|---|
+| 1 | Project scaffolding (Turborepo, Docker, Next.js, Prisma) | ✅ Done |
+| 2 | Database schema + Prisma setup | ✅ Done |
+| 3 | Authentication (signup, login, Google OAuth, email verification) | ⬜ Next |
+| 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
+| 5 | User Portal — Card Builder | ⬜ Pending |
+| 6 | User Portal — Dashboard & Settings | ⬜ Pending |
+| 7 | Public pages — Landing page, shared card view | ⬜ Pending |
+| 8 | QR code generation | ⬜ Pending |
+| 9 | vCard download | ⬜ Pending |
+| 10 | Analytics | ⬜ Pending |
+
+### What's been built
+
+**Project Structure**
+- Turborepo monorepo with `apps/web`, `apps/mobile` (placeholder), `packages/shared`
+- Docker Compose with PostgreSQL 15 + Redis 7
+- Next.js 14 App Router with all route groups: `(public)`, `(auth)`, `(user)`, `(admin)`
+- Prisma schema with full migration-ready schema
+- NextAuth.js v5 wired (credentials + Google), middleware protecting all routes
+- Zod validation schemas for auth and card
+- Shared TypeScript types + constants in `packages/shared`
+
+**Admin Portal** (`/admin/*`)
+- `AdminSidebar` — dark sidebar, responsive (Sheet drawer on mobile)
+- `AdminHeader` — page title + user avatar dropdown
+- `StatsCard` — reusable stat card component
+- Dashboard page — 4 live stats (users, cards, published, views) + recent users/cards tables
+- Users page — searchable paginated table, suspend/activate/delete actions
+- Cards page — searchable paginated table, publish/unpublish/delete actions
+- API routes: `GET/PATCH/DELETE /api/v1/admin/users/[id]`, `PATCH/DELETE /api/v1/admin/cards/[id]`
+
+**Seeded test accounts**
+- Admin: `admin@mydigitalcard.app` / `Admin@12345`
+- Demo user: `demo@mydigitalcard.app` / `Demo@12345`
 
 ---
 
@@ -164,4 +190,4 @@ Digital Card New/
 
 ---
 
-*Last updated: 2026-04-16*
+*Last updated: 2026-04-16 — Admin Portal complete*

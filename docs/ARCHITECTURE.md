@@ -1,10 +1,10 @@
 # Architecture Document
 # My Digital Card
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-04-16  
 **Owner:** Yuvraj Sharma  
-**Status:** Draft
+**Status:** In Development — Admin Portal complete
 
 ---
 
@@ -154,44 +154,62 @@ User visits /login
 
 ## 6. Component Architecture (Web)
 
+> Legend: ✅ Built | ⬜ Pending
+
 ```
 apps/web/
 ├── app/
 │   ├── (public)/
-│   │   ├── page.tsx                 # Landing page
+│   │   ├── page.tsx                        # Landing page ⬜
 │   │   └── u/[username]/
-│   │       └── page.tsx             # Public card view
+│   │       └── page.tsx                    # Public card view ⬜
 │   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   ├── signup/page.tsx
-│   │   └── reset-password/page.tsx
+│   │   ├── layout.tsx                      # Centered auth layout ✅
+│   │   ├── login/page.tsx                  # Login page ⬜
+│   │   ├── signup/page.tsx                 # Signup page ⬜
+│   │   ├── forgot-password/page.tsx        # Forgot password ⬜
+│   │   └── reset-password/page.tsx         # Reset password ⬜
 │   ├── (user)/
-│   │   ├── layout.tsx               # User portal layout (sidebar/nav)
-│   │   ├── dashboard/page.tsx       # User's cards overview
+│   │   ├── layout.tsx                      # User portal layout ⬜
+│   │   ├── dashboard/page.tsx              # User's cards overview ⬜
 │   │   ├── card/
-│   │   │   ├── new/page.tsx         # Card builder (new)
-│   │   │   └── [id]/edit/page.tsx   # Card builder (edit)
-│   │   └── settings/page.tsx        # Account settings
+│   │   │   ├── new/page.tsx                # Card builder (new) ⬜
+│   │   │   └── [id]/edit/page.tsx          # Card builder (edit) ⬜
+│   │   └── settings/page.tsx               # Account settings ⬜
 │   ├── (admin)/
-│   │   ├── layout.tsx               # Admin portal layout
-│   │   ├── admin/page.tsx           # Admin dashboard
-│   │   ├── admin/users/page.tsx     # User management
-│   │   └── admin/cards/page.tsx     # Card management
+│   │   ├── layout.tsx                      # Admin layout (SessionProvider) ✅
+│   │   ├── admin/page.tsx                  # Admin dashboard ✅
+│   │   ├── admin/users/page.tsx            # User management ✅
+│   │   └── admin/cards/page.tsx            # Card management ✅
 │   └── api/
+│       ├── auth/[...nextauth]/route.ts     # NextAuth handler ✅
 │       └── v1/
-│           ├── auth/[...nextauth]/route.ts
-│           ├── cards/route.ts
-│           ├── cards/[id]/route.ts
-│           ├── public/cards/[username]/route.ts
+│           ├── cards/route.ts              # GET, POST cards ✅
+│           ├── cards/[id]/route.ts         # GET, PUT, DELETE card ✅
+│           ├── public/cards/[username]/route.ts  # Public card view ✅
 │           └── admin/
-│               ├── users/route.ts
-│               └── stats/route.ts
+│               ├── stats/route.ts          # Platform stats ✅
+│               ├── users/route.ts          # List users ✅
+│               ├── users/[id]/route.ts     # PATCH, DELETE user ✅
+│               ├── cards/[id]/route.ts     # PATCH, DELETE card ✅
+│               └── (cards/route.ts stub)   # ⬜
 ├── components/
-│   ├── ui/                          # shadcn/ui base components
-│   ├── card/                        # Card-specific components
-│   │   ├── CardBuilder.tsx
-│   │   ├── CardPreview.tsx
-│   │   └── CardQRCode.tsx
+│   ├── ui/                                 # shadcn/ui: card, button, badge,
+│   │                                       # table, input, dropdown-menu,
+│   │                                       # avatar, separator, sheet,
+│   │                                       # skeleton, tabs ✅
+│   ├── admin/                              # Admin portal components ✅
+│   │   ├── AdminSidebar.tsx                # Dark sidebar, responsive ✅
+│   │   ├── AdminHeader.tsx                 # Top bar + user dropdown ✅
+│   │   ├── StatsCard.tsx                   # Reusable stat card ✅
+│   │   ├── RecentUsers.tsx                 # Dashboard: recent users list ✅
+│   │   ├── RecentCards.tsx                 # Dashboard: recent cards list ✅
+│   │   ├── UsersTable.tsx                  # Users management table ✅
+│   │   └── CardsTable.tsx                  # Cards management table ✅
+│   ├── card/                               # Card-specific components ⬜
+│   │   ├── CardBuilder.tsx                 # ⬜
+│   │   ├── CardPreview.tsx                 # ⬜
+│   │   └── CardQRCode.tsx                  # ⬜
 │   ├── admin/                       # Admin-specific components
 │   └── shared/                      # Shared across portals
 └── lib/
