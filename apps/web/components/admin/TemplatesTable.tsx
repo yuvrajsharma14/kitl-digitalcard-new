@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,7 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Eye, EyeOff, Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, EyeOff, Plus, ScanEye } from "lucide-react";
+import { TemplatePreviewDialog } from "@/components/admin/TemplatePreviewDialog";
 import type { TemplateConfig } from "@/lib/types/template";
 
 interface Template {
@@ -43,6 +45,7 @@ const LAYOUT_LABELS: Record<string, string> = {
 
 export function TemplatesTable({ templates }: TemplatesTableProps) {
   const router = useRouter();
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
 
   async function handleToggleActive(id: string, current: boolean) {
     await fetch(`/api/v1/admin/templates/${id}`, {
@@ -60,6 +63,12 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
   }
 
   return (
+    <>
+    <TemplatePreviewDialog
+      open={!!previewTemplate}
+      onOpenChange={(open) => { if (!open) setPreviewTemplate(null); }}
+      template={previewTemplate}
+    />
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
@@ -164,43 +173,58 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
                     })}
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/templates/${t.id}/edit`} className="flex items-center">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleToggleActive(t.id, t.isActive)}
-                        >
-                          {t.isActive ? (
-                            <>
-                              <EyeOff className="mr-2 h-4 w-4 text-orange-500" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="mr-2 h-4 w-4 text-green-500" />
-                              Activate
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => handleDelete(t.id, t.name)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-400 hover:text-indigo-600"
+                        title="Preview card"
+                        onClick={() => setPreviewTemplate(t)}
+                      >
+                        <ScanEye className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setPreviewTemplate(t)}>
+                            <ScanEye className="mr-2 h-4 w-4" />
+                            Preview
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/templates/${t.id}/edit`} className="flex items-center">
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleActive(t.id, t.isActive)}
+                          >
+                            {t.isActive ? (
+                              <>
+                                <EyeOff className="mr-2 h-4 w-4 text-orange-500" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="mr-2 h-4 w-4 text-green-500" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDelete(t.id, t.name)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -209,5 +233,6 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
         </Table>
       </div>
     </div>
+    </>
   );
 }
