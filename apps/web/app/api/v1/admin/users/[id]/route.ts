@@ -15,7 +15,7 @@ const updateSchema = z.object({
 // PATCH /api/v1/admin/users/:id — suspend / activate / change role
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -37,12 +37,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 // DELETE /api/v1/admin/users/:id
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Prevent self-deletion
-  if (params.id === (session?.user as any)?.id) {
+  if (params.id === session?.user?.id) {
     return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
   }
 

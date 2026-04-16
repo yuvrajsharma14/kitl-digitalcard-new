@@ -16,7 +16,7 @@ export default auth((req) => {
 
   // Redirect already-logged-in users away from auth pages
   if (isAuthRoute && session) {
-    const role = (session.user as any)?.role;
+    const role = session.user?.role;
     const destination = role === "ADMIN" ? "/admin" : "/dashboard";
     return NextResponse.redirect(new URL(destination, nextUrl));
   }
@@ -35,7 +35,7 @@ export default auth((req) => {
         new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl)
       );
     }
-    if ((session.user as any)?.role !== "ADMIN") {
+    if (session.user?.role !== "ADMIN") {
       // Logged in but not admin — send to user dashboard
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }

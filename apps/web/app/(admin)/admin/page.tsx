@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Metadata } from "next";
 import { Users, CreditCard, Eye, CheckCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";

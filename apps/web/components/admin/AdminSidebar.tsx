@@ -6,10 +6,10 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
+  LayoutTemplate,
   Settings,
   LogOut,
   Menu,
-  X,
   QrCode,
 } from "lucide-react";
 import { useState } from "react";
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/cards", label: "Cards", icon: CreditCard },
+  { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
 ];
 
 function NavItem({
@@ -37,7 +38,8 @@ function NavItem({
   onClick?: () => void;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive =
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
     <Link

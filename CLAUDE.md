@@ -102,7 +102,8 @@ Digital Card New/
 | Model | Description |
 |---|---|
 | User | Registered users (role: USER or ADMIN) |
-| Card | Digital business cards (slug = public URL) |
+| Card | Digital business cards (slug = public URL). `styles Json?` stores snapshot of applied template config |
+| CardTemplate | Admin-created visual templates. No FK to Card — config is copied (snapshot) when user picks a template |
 | SocialLink | Social media links on a card |
 | CardAnalytics | Aggregated view/click counts per card |
 | CardView | Individual view events (time-series) |
@@ -130,6 +131,7 @@ Digital Card New/
 | 2 | Database schema + Prisma setup | ✅ Done |
 | 3 | Authentication (signup, login, Google OAuth, email verification) | ✅ Done |
 | 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
+| 4a | Admin Portal — Card Template Management | 🔄 In Progress |
 | 5 | User Portal — Card Builder | ⬜ Pending |
 | 6 | User Portal — Dashboard & Settings | ⬜ Pending |
 | 7 | Public pages — Landing page, shared card view | ⬜ Pending |

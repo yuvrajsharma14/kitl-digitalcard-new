@@ -14,7 +14,7 @@ const updateSchema = z.object({
 // PATCH /api/v1/admin/cards/:id — publish / unpublish
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 // DELETE /api/v1/admin/cards/:id
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

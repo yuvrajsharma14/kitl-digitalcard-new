@@ -4,7 +4,6 @@ import { signIn } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 import { signupSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
-import { slugify } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { AuthError } from "next-auth";
@@ -59,9 +58,6 @@ export async function signupAction(data: {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-
-  // Generate unique slug for future card creation
-  const baseSlug = slugify(parsed.data.name);
 
   const user = await prisma.user.create({
     data: {

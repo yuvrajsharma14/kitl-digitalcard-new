@@ -48,7 +48,6 @@ async function main() {
       bio: "This is a demo digital business card.",
       email: "demo@mydigitalcard.app",
       website: "https://mydigitalcard.app",
-      theme: "default",
       isPublished: true,
       socialLinks: {
         create: [

@@ -1,0 +1,22 @@
+FROM node:20-alpine
+RUN apk add --no-cache openssl
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/shared/package.json ./packages/shared/
+
+RUN pnpm install --frozen-lockfile
+
+COPY apps/web/prisma ./apps/web/prisma
+COPY apps/web/lib ./apps/web/lib
+COPY packages/shared ./packages/shared
+
+WORKDIR /app/apps/web
+
+RUN npx prisma generate
+
+# db push applies schema directly (dev) then seed
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npx tsx prisma/seed.ts"]

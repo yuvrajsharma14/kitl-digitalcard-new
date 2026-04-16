@@ -17,6 +17,19 @@ Primary database is **PostgreSQL 15** managed via **Prisma ORM**. The schema is 
 ## 2. Entity Relationship Diagram
 
 ```
+┌──────────────────┐
+│  CardTemplate    │
+│──────────────────│
+│ id (PK)          │  (no FK to Card — snapshot model)
+│ name             │
+│ description      │
+│ thumbnailUrl     │
+│ config (JSON)    │ ← { layout, backgroundColor, textColor, accentColor, fontFamily }
+│ isActive         │
+│ createdAt        │
+│ updatedAt        │
+└──────────────────┘
+
 ┌─────────────────┐         ┌──────────────────────┐
 │      User       │         │         Card         │
 │─────────────────│         │──────────────────────│
@@ -31,7 +44,7 @@ Primary database is **PostgreSQL 15** managed via **Prisma ORM**. The schema is 
 │ createdAt       │         │ phone                │
 │ updatedAt       │         │ website              │
 └─────────────────┘         │ avatarUrl            │
-                            │ theme                │
+                            │ styles (JSON)        │ ← snapshot of template config at pick-time
                             │ isPublished          │
                             │ createdAt            │
                             │ updatedAt            │
@@ -93,16 +106,46 @@ A user's digital business card. One user can have multiple cards.
 | phone | String | Nullable | Contact phone number |
 | website | String | Nullable | Personal/company website |
 | avatarUrl | String | Nullable | Card profile photo (Cloudinary) |
-| theme | String | Default: "default" | Card color theme |
+| styles | JSON | Nullable | Snapshot of template config at pick-time: `{ layout, backgroundColor, textColor, accentColor, fontFamily }` |
 | isPublished | Boolean | Default: false | Is card publicly accessible |
 | createdAt | DateTime | Default: now() | Creation time |
 | updatedAt | DateTime | Auto-updated | Last update time |
+
+> **Note:** `styles` is a snapshot — no FK to `CardTemplate`. Changing or deleting a template never affects cards.
 
 **Indexes:** `slug` (unique), `userId`
 
 ---
 
-### 3.3 SocialLink
+### 3.3 CardTemplate
+
+Admin-created visual templates that users can apply when building a card.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | String (CUID) | PK | Unique template identifier |
+| name | String | Not Null | e.g., "Professional Dark" |
+| description | String | Nullable | Short description shown to users |
+| thumbnailUrl | String | Nullable | Preview image URL (Cloudinary) |
+| config | JSON | Not Null | `{ layout, backgroundColor, textColor, accentColor, fontFamily }` |
+| isActive | Boolean | Default: true | Visible to users when true |
+| createdAt | DateTime | Default: now() | Creation time |
+| updatedAt | DateTime | Auto-updated | Last update time |
+
+**Config shape:**
+```json
+{
+  "layout": "classic | modern | minimal | bold",
+  "backgroundColor": "#ffffff",
+  "textColor": "#1a1a2e",
+  "accentColor": "#6366f1",
+  "fontFamily": "inter | poppins | roboto | playfair | montserrat"
+}
+```
+
+---
+
+### 3.4 SocialLink
 
 Social media / contact links attached to a card.
 
@@ -118,7 +161,7 @@ Social media / contact links attached to a card.
 
 ---
 
-### 3.4 CardAnalytics
+### 3.5 CardAnalytics
 
 Aggregated analytics per card (running totals).
 
@@ -134,7 +177,7 @@ Aggregated analytics per card (running totals).
 
 ---
 
-### 3.5 CardView
+### 3.6 CardView
 
 Individual view events (for time-series analytics).
 
@@ -150,7 +193,7 @@ Individual view events (for time-series analytics).
 
 ---
 
-### 3.6 Account (NextAuth)
+### 3.7 Account (NextAuth)
 
 OAuth account connections for users (managed by NextAuth.js).
 
@@ -169,7 +212,7 @@ OAuth account connections for users (managed by NextAuth.js).
 
 ---
 
-### 3.7 Session (NextAuth)
+### 3.8 Session (NextAuth)
 
 Active user sessions.
 
@@ -182,7 +225,7 @@ Active user sessions.
 
 ---
 
-### 3.8 VerificationToken (NextAuth)
+### 3.9 VerificationToken (NextAuth)
 
 Email verification and password reset tokens.
 
@@ -226,6 +269,7 @@ enum SocialPlatform {
 | Card → CardViews | One-to-Many | Many view events per card |
 | User → Accounts | One-to-Many | Multiple OAuth providers per user |
 | User → Sessions | One-to-Many | Multiple active sessions |
+| CardTemplate → Card | None (snapshot) | No FK — template config is copied into Card.styles at pick-time |
 
 ---
 
@@ -288,7 +332,7 @@ model Card {
   phone       String?
   website     String?
   avatarUrl   String?
-  theme       String   @default("default")
+  styles      Json?    // snapshot of template config: { layout, backgroundColor, textColor, accentColor, fontFamily }
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -299,6 +343,17 @@ model Card {
   views       CardView[]
 
   @@index([userId])
+}
+
+model CardTemplate {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  thumbnailUrl String?
+  config       Json     // { layout, backgroundColor, textColor, accentColor, fontFamily }
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model SocialLink {

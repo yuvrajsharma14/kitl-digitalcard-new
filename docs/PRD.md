@@ -120,7 +120,7 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 
 ---
 
-### 4.7 Admin Portal ✅
+### 4.7 Admin Portal 🔄
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
@@ -129,7 +129,31 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 | 3 | User management — list, search, suspend, activate, delete | Must Have | ✅ |
 | 4 | Card management — list, search, publish, unpublish, delete | Must Have | ✅ |
 | 5 | Analytics overview — signups over time, cards created | Should Have | ⬜ |
-| 6 | Manage card templates | Should Have | ⬜ |
+| 6 | Template management — create, edit, publish/unpublish, delete | Must Have | 🔄 |
+
+---
+
+### 4.8 Card Templates (Admin-Managed)
+
+Templates define the visual appearance of a digital business card. Admins create and publish templates; users pick one when building their card.
+
+**Rules:**
+- A template defines: layout, background color, text color, accent color, and font family
+- When a user selects a template, the config is **copied (snapshotted) into the card** — no live link between card and template
+- Editing or deleting a template after users have applied it has **no effect** on those cards
+- Only `isActive = true` templates are visible to users
+
+**Layout options:** Classic · Modern · Minimal · Bold  
+**Font options:** Inter · Poppins · Roboto · Playfair Display · Montserrat
+
+| # | Feature | Priority | Status |
+|---|---|---|---|
+| 1 | Create template (name, description, layout, colors, font) | Must Have | 🔄 |
+| 2 | Live card preview while configuring | Must Have | 🔄 |
+| 3 | Edit template | Must Have | 🔄 |
+| 4 | Publish / unpublish template (visible to users or not) | Must Have | 🔄 |
+| 5 | Delete template | Must Have | 🔄 |
+| 6 | List all templates with status | Must Have | 🔄 |
 
 ---
 
@@ -152,6 +176,9 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 - As an admin, I can view all registered users and their cards.
 - As an admin, I can suspend or delete users who violate policies.
 - As an admin, I can view platform-wide analytics.
+- As an admin, I can create card templates with custom layouts, colors, and fonts.
+- As an admin, I can publish or unpublish templates to control what users see.
+- As an admin, I can edit or delete templates without affecting cards already using them.
 
 ---
 
