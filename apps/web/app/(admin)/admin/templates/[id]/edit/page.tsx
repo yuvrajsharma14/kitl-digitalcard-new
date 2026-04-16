@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { TemplateForm } from "@/components/admin/TemplateForm";
 import type { TemplateConfig } from "@/lib/types/template";
+import { DEFAULT_TEMPLATE_FIELDS } from "@/lib/types/template";
 
 export const metadata: Metadata = { title: "Edit Template" };
 
@@ -30,13 +31,19 @@ export default async function EditTemplatePage({ params }: PageProps) {
         <TemplateForm
           mode="edit"
           templateId={template.id}
-          defaultValues={{
-            name: template.name,
-            description: template.description ?? "",
-            thumbnailUrl: template.thumbnailUrl ?? "",
-            isActive: template.isActive,
-            config: template.config as unknown as TemplateConfig,
-          }}
+          defaultValues={(() => {
+            const cfg = template.config as unknown as TemplateConfig;
+            return {
+              name:         template.name,
+              description:  template.description ?? "",
+              thumbnailUrl: template.thumbnailUrl ?? "",
+              isActive:     template.isActive,
+              config: {
+                ...cfg,
+                fields: { ...DEFAULT_TEMPLATE_FIELDS, ...(cfg.fields ?? {}) },
+              },
+            };
+          })()}
         />
       </main>
     </div>

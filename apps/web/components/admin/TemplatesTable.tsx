@@ -37,10 +37,14 @@ interface TemplatesTableProps {
 }
 
 const LAYOUT_LABELS: Record<string, string> = {
-  classic: "Classic",
-  modern: "Modern",
-  minimal: "Minimal",
-  bold: "Bold",
+  classic:   "Classic",
+  modern:    "Modern",
+  minimal:   "Minimal",
+  bold:      "Bold",
+  elegant:   "Elegant",
+  sharp:     "Sharp",
+  profile:   "Profile",
+  sidepanel: "Side Panel",
 };
 
 export function TemplatesTable({ templates }: TemplatesTableProps) {

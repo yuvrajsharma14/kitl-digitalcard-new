@@ -3,12 +3,30 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+const fieldsSchema = z.object({
+  headshot:  z.boolean(),
+  logo:      z.boolean(),
+  banner:    z.boolean(),
+  jobTitle:  z.boolean(),
+  company:   z.boolean(),
+  tagline:   z.boolean(),
+  bio:       z.boolean(),
+  email:     z.boolean(),
+  phone:     z.boolean(),
+  website:   z.boolean(),
+  linkedin:  z.boolean(),
+  facebook:  z.boolean(),
+  instagram: z.boolean(),
+  twitter:   z.boolean(),
+});
+
 const configSchema = z.object({
-  layout: z.enum(["classic", "modern", "minimal", "bold"]),
+  layout:          z.enum(["classic", "modern", "minimal", "bold", "elegant", "sharp", "profile", "sidepanel"]),
   backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  fontFamily: z.enum(["inter", "poppins", "roboto", "playfair", "montserrat"]),
+  textColor:       z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  accentColor:     z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  fontFamily:      z.enum(["inter", "poppins", "roboto", "playfair", "montserrat"]),
+  fields:          fieldsSchema.optional(),
 });
 
 const createSchema = z.object({

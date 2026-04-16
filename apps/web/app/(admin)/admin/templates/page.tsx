@@ -23,7 +23,10 @@ export default async function AdminTemplatesPage() {
       />
       <main className="flex-1 overflow-y-auto p-6">
         <TemplatesTable
-          templates={templates.map((t) => ({
+          templates={templates.map((t: {
+            id: string; name: string; description: string | null;
+            config: unknown; isActive: boolean; createdAt: Date; thumbnailUrl: string | null; updatedAt: Date;
+          }) => ({
             ...t,
             config: t.config as unknown as TemplateConfig,
           }))}
