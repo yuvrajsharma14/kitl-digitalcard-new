@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # My Digital Card
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-04-16  
 **Owner:** Yuvraj Sharma  
 **Status:** In Development — Phase 1 (Web)
@@ -120,7 +120,7 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 
 ---
 
-### 4.7 Admin Portal 🔄
+### 4.7 Admin Portal ✅
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
@@ -129,7 +129,7 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 | 3 | User management — list, search, suspend, activate, delete | Must Have | ✅ |
 | 4 | Card management — list, search, publish, unpublish, delete | Must Have | ✅ |
 | 5 | Analytics overview — signups over time, cards created | Should Have | ⬜ |
-| 6 | Template management — create, edit, publish/unpublish, delete | Must Have | 🔄 |
+| 6 | Template management — create, edit, publish/unpublish, delete | Must Have | ✅ |
 
 ---
 
@@ -143,17 +143,19 @@ Templates define the visual appearance of a digital business card. Admins create
 - Editing or deleting a template after users have applied it has **no effect** on those cards
 - Only `isActive = true` templates are visible to users
 
-**Layout options:** Classic · Modern · Minimal · Bold  
+**Layout options:** Classic · Modern · Minimal · Bold · Elegant · Sharp · Profile · Side Panel  
 **Font options:** Inter · Poppins · Roboto · Playfair Display · Montserrat
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | Create template (name, description, layout, colors, font) | Must Have | 🔄 |
-| 2 | Live card preview while configuring | Must Have | 🔄 |
-| 3 | Edit template | Must Have | 🔄 |
-| 4 | Publish / unpublish template (visible to users or not) | Must Have | 🔄 |
-| 5 | Delete template | Must Have | 🔄 |
-| 6 | List all templates with status | Must Have | 🔄 |
+| 1 | Create template (name, description, layout, colors, font) | Must Have | ✅ |
+| 2 | Live card preview while configuring | Must Have | ✅ |
+| 3 | Edit template | Must Have | ✅ |
+| 4 | Publish / unpublish template (visible to users or not) | Must Have | ✅ |
+| 5 | Delete template | Must Have | ✅ |
+| 6 | List all templates with status | Must Have | ✅ |
+| 7 | Two-sided card preview (front + back flip) | Must Have | ✅ |
+| 8 | Back of card — QR code + name + title + company | Must Have | ✅ |
 
 ---
 
@@ -186,8 +188,9 @@ Templates define the visual appearance of a digital business card. Admins create
 
 ### Phase 1 — Web (Current)
 - ✅ Project scaffolding (Turborepo monorepo, Docker, Next.js 14, Prisma)
-- ✅ Admin portal (dashboard, user management, card management)
 - ✅ Authentication (login, Google OAuth, forgot/reset password, email verification)
+- ✅ Admin portal — dashboard, user management, card management
+- ✅ Admin portal — card template management (8 layouts, live preview, front/back flip)
 - ⬜ Card builder + sharing (QR code, link, vCard)
 - ⬜ User dashboard & settings
 - ⬜ Public landing page

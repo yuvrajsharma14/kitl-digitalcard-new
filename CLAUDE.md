@@ -131,7 +131,7 @@ Digital Card New/
 | 2 | Database schema + Prisma setup | ✅ Done |
 | 3 | Authentication (signup, login, Google OAuth, email verification) | ✅ Done |
 | 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
-| 4a | Admin Portal — Card Template Management | 🔄 In Progress |
+| 4a | Admin Portal — Card Template Management | ✅ Done |
 | 5 | User Portal — Card Builder | ⬜ Pending |
 | 6 | User Portal — Dashboard & Settings | ⬜ Pending |
 | 7 | Public pages — Landing page, shared card view | ⬜ Pending |
@@ -167,6 +167,15 @@ Digital Card New/
 - Cards page — searchable paginated table, publish/unpublish/delete actions
 - API routes: `GET/PATCH/DELETE /api/v1/admin/users/[id]`, `PATCH/DELETE /api/v1/admin/cards/[id]`
 
+**Admin Card Template Management** (`/admin/templates/*`)
+- `TemplatesTable` — lists all templates with layout, colors, font, status (active/inactive); inline preview, edit, activate/deactivate, delete actions
+- `TemplateForm` — create/edit template form (name, description, layout, colors, font, field toggles); live `CardPreview` on the right panel
+- `TemplatePreviewDialog` — full-screen preview modal launched from the templates table
+- `CardPreview` — 8 layout renderers (Classic, Modern, Minimal, Bold, Elegant, Sharp, Profile, Side Panel); Front/Back flip toggle with CSS 3D animation; front shows full card with sample data, back shows QR code + name + title + company
+- API routes: `GET/POST /api/v1/admin/templates`, `GET/PATCH/DELETE /api/v1/admin/templates/[id]`
+- Template config: layout, backgroundColor, textColor, accentColor, fontFamily, fields (14 toggleable fields)
+- Template snapshot pattern: config is copied into Card.styles when user picks a template — no live FK
+
 **Seeded test accounts**
 - Admin: `admin@mydigitalcard.app` / `Admin@12345`
 - Demo user: `demo@mydigitalcard.app` / `Demo@12345`
@@ -200,4 +209,4 @@ Digital Card New/
 
 ---
 
-*Last updated: 2026-04-16 — Admin Portal + Authentication complete*
+*Last updated: 2026-04-16 — Admin Portal (including Card Template Management) complete*
