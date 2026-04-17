@@ -1,5 +1,6 @@
 import { SessionProvider } from "next-auth/react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminFooter } from "@/components/admin/AdminFooter";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,6 +9,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           {children}
+          <AdminFooter />
         </div>
       </div>
     </SessionProvider>

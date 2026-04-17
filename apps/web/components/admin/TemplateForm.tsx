@@ -346,23 +346,21 @@ export function TemplateForm({ mode, templateId, defaultValues }: TemplateFormPr
       </form>
 
       {/* ── Live preview ──────────────────────────────────────────── */}
-      <div className="space-y-3">
+      <div className="space-y-3 xl:self-start xl:sticky xl:top-6">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Live Preview
         </p>
-        <div className="sticky top-6">
-          <div
-            className="rounded-2xl flex items-center justify-center p-5 min-h-[480px]"
-            style={{
-              background: `radial-gradient(ellipse at 60% 40%, ${config.accentColor}28 0%, transparent 65%), linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)`,
-            }}
-          >
-            <CardPreview config={config} size="lg" />
-          </div>
-          <p className="text-center text-[10px] text-gray-400 mt-2">
-            Updates live as you change settings
-          </p>
+        <div
+          className="rounded-2xl flex items-center justify-center p-5"
+          style={{
+            background: `radial-gradient(ellipse at 60% 40%, ${config.accentColor}28 0%, transparent 65%), linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)`,
+          }}
+        >
+          <CardPreview config={config} size="lg" />
         </div>
+        <p className="text-center text-[10px] text-gray-400 mt-2">
+          Updates live as you change settings
+        </p>
       </div>
     </div>
   );

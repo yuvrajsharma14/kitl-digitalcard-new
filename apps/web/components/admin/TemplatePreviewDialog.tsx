@@ -51,10 +51,10 @@ export function TemplatePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-2xl p-0 overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_280px]">
+      <DialogContent className="w-full max-w-4xl p-0 overflow-hidden max-h-[92vh]">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] overflow-y-auto max-h-[92vh]">
           {/* Left — details */}
-          <div className="p-7 flex flex-col gap-5">
+          <div className="p-7 flex flex-col gap-5 overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center gap-2 flex-wrap">
                 <DialogTitle className="text-xl">{template.name}</DialogTitle>
@@ -126,7 +126,7 @@ export function TemplatePreviewDialog({
 
           {/* Right — live card preview */}
           <div
-            className="flex items-center justify-center p-6 sm:border-l border-gray-100"
+            className="flex items-center justify-center p-6 md:border-l border-t md:border-t-0 border-gray-100 overflow-y-auto"
             style={{
               background: `radial-gradient(circle at center, ${config.accentColor}15, transparent 70%), #f8fafc`,
             }}

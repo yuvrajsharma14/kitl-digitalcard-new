@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Eye, EyeOff, Plus, ScanEye } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, EyeOff, Plus, ScanEye, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { TemplatePreviewDialog } from "@/components/admin/TemplatePreviewDialog";
 import type { TemplateConfig } from "@/lib/types/template";
 
@@ -47,9 +48,52 @@ const LAYOUT_LABELS: Record<string, string> = {
   sidepanel: "Side Panel",
 };
 
+type SortKey = "name" | "layout" | "status" | "createdAt";
+type SortDir = "asc" | "desc";
+
+function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
+  if (col !== sortKey) return <ArrowUpDown className="ml-1 h-3.5 w-3.5 opacity-40" />;
+  return sortDir === "asc"
+    ? <ArrowUp className="ml-1 h-3.5 w-3.5 text-indigo-600" />
+    : <ArrowDown className="ml-1 h-3.5 w-3.5 text-indigo-600" />;
+}
+
 export function TemplatesTable({ templates }: TemplatesTableProps) {
   const router = useRouter();
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [search, setSearch]     = useState("");
+  const [sortKey, setSortKey]   = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir]   = useState<SortDir>("desc");
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const displayed = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? templates.filter(
+          (t) =>
+            t.name.toLowerCase().includes(q) ||
+            (t.description ?? "").toLowerCase().includes(q) ||
+            (LAYOUT_LABELS[t.config.layout] ?? t.config.layout).toLowerCase().includes(q)
+        )
+      : templates;
+
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name")      cmp = a.name.localeCompare(b.name);
+      if (sortKey === "layout")    cmp = (LAYOUT_LABELS[a.config.layout] ?? a.config.layout).localeCompare(LAYOUT_LABELS[b.config.layout] ?? b.config.layout);
+      if (sortKey === "status")    cmp = Number(b.isActive) - Number(a.isActive);
+      if (sortKey === "createdAt") cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [templates, search, sortKey, sortDir]);
 
   async function handleToggleActive(id: string, current: boolean) {
     await fetch(`/api/v1/admin/templates/${id}`, {
@@ -74,28 +118,55 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
       template={previewTemplate}
     />
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {templates.length} template{templates.length !== 1 ? "s" : ""}
-        </p>
-        <Button asChild size="sm">
-          <Link href="/admin/templates/new">
-            <Plus className="mr-1.5 h-4 w-4" />
-            New Template
-          </Link>
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <Input
+            placeholder="Search templates..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-3 sm:ml-auto">
+          <p className="text-sm text-gray-500 shrink-0">
+            {displayed.length} of {templates.length} template{templates.length !== 1 ? "s" : ""}
+          </p>
+          <Button asChild size="sm">
+            <Link href="/admin/templates/new">
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Template
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
-              <TableHead className="font-semibold text-gray-600">Template</TableHead>
-              <TableHead className="font-semibold text-gray-600">Layout</TableHead>
+              <TableHead className="font-semibold text-gray-600">
+                <button type="button" onClick={() => toggleSort("name")} className="flex items-center hover:text-gray-900 transition-colors">
+                  Template <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
+                </button>
+              </TableHead>
+              <TableHead className="font-semibold text-gray-600">
+                <button type="button" onClick={() => toggleSort("layout")} className="flex items-center hover:text-gray-900 transition-colors">
+                  Layout <SortIcon col="layout" sortKey={sortKey} sortDir={sortDir} />
+                </button>
+              </TableHead>
               <TableHead className="font-semibold text-gray-600">Colors</TableHead>
               <TableHead className="font-semibold text-gray-600">Font</TableHead>
-              <TableHead className="font-semibold text-gray-600">Status</TableHead>
-              <TableHead className="font-semibold text-gray-600">Created</TableHead>
+              <TableHead className="font-semibold text-gray-600">
+                <button type="button" onClick={() => toggleSort("status")} className="flex items-center hover:text-gray-900 transition-colors">
+                  Status <SortIcon col="status" sortKey={sortKey} sortDir={sortDir} />
+                </button>
+              </TableHead>
+              <TableHead className="font-semibold text-gray-600">
+                <button type="button" onClick={() => toggleSort("createdAt")} className="flex items-center hover:text-gray-900 transition-colors">
+                  Created <SortIcon col="createdAt" sortKey={sortKey} sortDir={sortDir} />
+                </button>
+              </TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -109,8 +180,14 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
                   </Link>
                 </TableCell>
               </TableRow>
+            ) : displayed.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-gray-400 py-12">
+                  No templates match &ldquo;{search}&rdquo;.
+                </TableCell>
+              </TableRow>
             ) : (
-              templates.map((t) => (
+              displayed.map((t) => (
                 <TableRow key={t.id} className="hover:bg-gray-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
