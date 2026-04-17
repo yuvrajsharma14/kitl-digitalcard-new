@@ -202,7 +202,13 @@ export function TemplatesTable({ templates }: TemplatesTableProps) {
                         />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewTemplate(t)}
+                          className="text-sm font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors text-left"
+                        >
+                          {t.name}
+                        </button>
                         {t.description && (
                           <p className="text-xs text-gray-400 truncate max-w-[200px]">
                             {t.description}

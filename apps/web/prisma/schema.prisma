@@ -30,6 +30,22 @@ enum SocialPlatform {
   OTHER
 }
 
+enum TicketCategory {
+  GENERAL
+  SUGGESTION
+  COMPLAINT
+  BUG
+  BILLING
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 // ─────────────────────────────────────────
 // User
 // ─────────────────────────────────────────
@@ -46,9 +62,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  cards    Card[]
-  accounts Account[]
-  sessions Session[]
+  cards          Card[]
+  accounts       Account[]
+  sessions       Session[]
+  supportTickets SupportTicket[]
 
   @@map("users")
 }
@@ -145,6 +162,29 @@ model CardView {
   @@index([cardId])
   @@index([viewedAt])
   @@map("card_views")
+}
+
+// ─────────────────────────────────────────
+// Support Tickets
+// ─────────────────────────────────────────
+
+model SupportTicket {
+  id        String         @id @default(cuid())
+  userId    String
+  subject   String
+  message   String         @db.Text
+  category  TicketCategory
+  status    TicketStatus   @default(OPEN)
+  adminNote String?        @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("support_tickets")
 }
 
 // ─────────────────────────────────────────

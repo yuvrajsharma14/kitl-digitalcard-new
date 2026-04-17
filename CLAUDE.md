@@ -132,6 +132,7 @@ Digital Card New/
 | 3 | Authentication (signup, login, Google OAuth, email verification) | ✅ Done |
 | 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
 | 4a | Admin Portal — Card Template Management | ✅ Done |
+| 4b | Support Tickets (user submit + admin manage) | ✅ Done |
 | 5 | User Portal — Card Builder | ⬜ Pending |
 | 6 | User Portal — Dashboard & Settings | ⬜ Pending |
 | 7 | Public pages — Landing page, shared card view | ⬜ Pending |
@@ -209,4 +210,12 @@ Digital Card New/
 
 ---
 
-*Last updated: 2026-04-16 — Admin Portal (including Card Template Management) complete*
+**Support Tickets** (`/admin/support`, `/support`)
+- `SupportTicketsTable` — lists all tickets; search by subject/user; filter by status + category; sort by subject/category/status/date; row-click or "View" button opens detail
+- `TicketDetailDialog` — shows full message, user info, category; admin can update status + write a response note
+- User page at `/support` — submit new ticket (subject, category, message) + view own tickets with admin responses
+- API: `POST/GET /api/v1/support/tickets` (user), `GET /api/v1/admin/support/tickets`, `GET/PATCH /api/v1/admin/support/tickets/[id]`
+- Ticket categories: GENERAL, SUGGESTION, COMPLAINT, BUG, BILLING, OTHER
+- Ticket statuses: OPEN, IN_PROGRESS, RESOLVED, CLOSED
+
+*Last updated: 2026-04-17 — Support Tickets complete*

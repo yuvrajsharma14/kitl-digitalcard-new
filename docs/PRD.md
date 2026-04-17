@@ -120,6 +120,19 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 
 ---
 
+### 4.9 Support Tickets ✅
+
+| # | Feature | Priority | Status |
+|---|---|---|---|
+| 1 | User can submit a support ticket (subject, category, message) | Must Have | ✅ |
+| 2 | Categories: General, Suggestion, Complaint, Bug Report, Billing, Other | Must Have | ✅ |
+| 3 | User can view their own tickets and admin responses | Must Have | ✅ |
+| 4 | Admin can view all tickets with search, filter by status/category, sort | Must Have | ✅ |
+| 5 | Admin can update ticket status (Open, In Progress, Resolved, Closed) | Must Have | ✅ |
+| 6 | Admin can write a response/note visible to the user | Must Have | ✅ |
+
+---
+
 ### 4.7 Admin Portal ✅
 
 | # | Feature | Priority | Status |
@@ -130,6 +143,7 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 | 4 | Card management — list, search, publish, unpublish, delete | Must Have | ✅ |
 | 5 | Analytics overview — signups over time, cards created | Should Have | ⬜ |
 | 6 | Template management — create, edit, publish/unpublish, delete | Must Have | ✅ |
+| 7 | Support ticket management — view all, filter, respond, update status | Must Have | ✅ |
 
 ---
 

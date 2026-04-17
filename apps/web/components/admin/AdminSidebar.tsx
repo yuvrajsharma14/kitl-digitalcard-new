@@ -7,6 +7,7 @@ import {
   Users,
   CreditCard,
   LayoutTemplate,
+  LifeBuoy,
   Settings,
   LogOut,
   Menu,
@@ -20,10 +21,11 @@ import { Separator } from "@/components/ui/separator";
 import { signOut } from "next-auth/react";
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/cards", label: "Cards", icon: CreditCard },
-  { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/admin",           label: "Dashboard",       icon: LayoutDashboard },
+  { href: "/admin/users",     label: "Users",           icon: Users },
+  { href: "/admin/cards",     label: "Cards",           icon: CreditCard },
+  { href: "/admin/templates", label: "Templates",       icon: LayoutTemplate },
+  { href: "/admin/support",   label: "Support Tickets", icon: LifeBuoy },
 ];
 
 function NavItem({

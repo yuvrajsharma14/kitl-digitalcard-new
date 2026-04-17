@@ -255,7 +255,43 @@ enum SocialPlatform {
   TIKTOK
   OTHER
 }
+
+enum TicketCategory {
+  GENERAL
+  SUGGESTION
+  COMPLAINT
+  BUG
+  BILLING
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
 ```
+
+---
+
+### 3.10 SupportTicket
+
+User-submitted support requests.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | String (CUID) | PK | Unique ticket identifier |
+| userId | String | FK → User.id | Submitting user |
+| subject | String | Not Null | Short summary (max 120 chars) |
+| message | String (Text) | Not Null | Full message body (max 2000 chars) |
+| category | TicketCategory | Not Null | GENERAL, SUGGESTION, COMPLAINT, BUG, BILLING, OTHER |
+| status | TicketStatus | Default: OPEN | OPEN, IN_PROGRESS, RESOLVED, CLOSED |
+| adminNote | String (Text) | Nullable | Admin response visible to user |
+| createdAt | DateTime | Default: now() | Submission time |
+| updatedAt | DateTime | Auto-updated | Last update time |
+
+**Indexes:** `userId`, `status`, `createdAt`
 
 ---
 
@@ -264,6 +300,7 @@ enum SocialPlatform {
 | Relationship | Type | Notes |
 |---|---|---|
 | User → Cards | One-to-Many | A user can have multiple cards |
+| User → SupportTickets | One-to-Many | A user can submit multiple tickets |
 | Card → SocialLinks | One-to-Many | A card can have multiple social links |
 | Card → CardAnalytics | One-to-One | One analytics record per card |
 | Card → CardViews | One-to-Many | Many view events per card |
