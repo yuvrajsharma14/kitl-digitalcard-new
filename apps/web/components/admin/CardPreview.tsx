@@ -64,13 +64,14 @@ function makeLogoSvg(accentHex: string, onDark = false): string {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface CardPreviewProps {
-  config:         TemplateConfig;
-  size?:          "sm" | "lg";
-  sampleName?:    string;
-  sampleTitle?:   string;
-  sampleCompany?: string;
-  sampleTagline?: string;
-  sampleUrl?:     string;
+  config:          TemplateConfig;
+  size?:           "sm" | "lg";
+  sampleName?:     string;
+  sampleTitle?:    string;
+  sampleCompany?:  string;
+  sampleTagline?:  string;
+  sampleUrl?:      string;
+  sampleAvatar?:   string | null;
 }
 
 const SAMPLE_URL = "https://mydigitalcard.app/u/alex-johnson";
@@ -99,6 +100,7 @@ export function CardPreview({
   sampleCompany = "KITLabs Inc.",
   sampleTagline = "Building products people love.",
   sampleUrl     = SAMPLE_URL,
+  sampleAvatar  = null,
 }: CardPreviewProps) {
   const { layout, backgroundColor, textColor, accentColor, fontFamily } = config;
   const lg = size === "lg";
@@ -156,7 +158,7 @@ export function CardPreview({
         style={{ boxShadow: shadow }}
       >
         <img
-          src={HEADSHOT_URL}
+          src={sampleAvatar ?? HEADSHOT_URL}
           alt="Sample headshot"
           className="w-full h-full object-cover"
           style={{ objectPosition: "50% 15%" }}

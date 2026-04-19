@@ -47,12 +47,15 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { socialLinks, ...cardData } = parsed.data;
+  const { socialLinks, styles, avatarUrl, ...rest } = parsed.data;
 
   const updated = await prisma.card.update({
     where: { id: params.id },
     data: {
-      ...cardData,
+      ...rest,
+      avatarUrl: avatarUrl || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      styles: styles ? (styles as any) : null,
       socialLinks: {
         deleteMany: {},
         create: socialLinks,

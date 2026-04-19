@@ -21,12 +21,20 @@ WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY . .
+
+# Copy ONLY the Prisma schema first so generate is cached independently of source changes
+COPY apps/web/prisma ./apps/web/prisma
 
 WORKDIR /app/apps/web
 
-# Generate Prisma client
+# Generate Prisma client — cached unless schema changes
 RUN npx prisma generate
+
+# Now copy remaining source
+WORKDIR /app
+COPY . .
+
+WORKDIR /app/apps/web
 
 # Flatten pnpm Prisma paths so runner stage can COPY them
 RUN mkdir -p /prisma-flat/prisma-client /prisma-flat/prisma-pkg && \

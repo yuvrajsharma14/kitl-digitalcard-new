@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2, QrCode, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
 
-import { signupSchema, type SignupInput } from "@/lib/validations/auth";
+import { signupSchema } from "@/lib/validations/auth";
 import { signupAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

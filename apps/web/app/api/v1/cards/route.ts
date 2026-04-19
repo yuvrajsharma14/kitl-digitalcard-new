@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { socialLinks, ...cardData } = parsed.data;
+  const { socialLinks, styles, avatarUrl, ...rest } = parsed.data;
 
   // Generate unique slug
-  let slug = slugify(cardData.displayName);
+  let slug = slugify(rest.displayName);
   const existing = await prisma.card.findUnique({ where: { slug } });
   if (existing) {
     slug = `${slug}-${Date.now()}`;
@@ -44,9 +44,12 @@ export async function POST(req: NextRequest) {
 
   const card = await prisma.card.create({
     data: {
-      ...cardData,
+      ...rest,
       slug,
-      userId: session.user.id,
+      userId:    session.user.id,
+      avatarUrl: avatarUrl || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      styles: styles ? (styles as any) : null,
       socialLinks: {
         create: socialLinks,
       },
