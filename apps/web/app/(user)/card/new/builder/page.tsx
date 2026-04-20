@@ -250,7 +250,16 @@ export default function BuilderPage() {
                     previewName={displayName || "Your Name"}
                     previewTitle={jobTitle || undefined}
                     previewCompany={company || undefined}
+                    previewEmail={email || undefined}
+                    previewPhone={phone || undefined}
+                    previewWebsite={website || undefined}
                     previewAvatar={avatarPreview}
+                    previewLinkedin={socialLinks.find((l) => l.platform === "LINKEDIN")?.url}
+                    previewFacebook={socialLinks.find((l) => l.platform === "FACEBOOK")?.url}
+                    previewInstagram={socialLinks.find((l) => l.platform === "INSTAGRAM")?.url}
+                    previewTwitter={socialLinks.find((l) => l.platform === "TWITTER")?.url}
+                    hideIfNoAvatar
+                    hideEmptyFields
                   />
 
                 </div>
@@ -414,12 +423,13 @@ export default function BuilderPage() {
                 sampleTitle={jobTitle     || "Your Title"}
                 sampleCompany={company    || "Your Company"}
                 sampleTagline={bio        || undefined}
+                sampleEmail={email        || undefined}
+                samplePhone={phone        || undefined}
+                sampleWebsite={website    || undefined}
                 sampleAvatar={avatarPreview}
+                hideIfNoAvatar
+                  hideEmptyFields
               />
-              <p className="text-[10px] text-gray-400 text-center max-w-[200px] leading-relaxed">
-                Tap the card to flip and see the back side
-              </p>
-
               {/* Quick info summary */}
               <div className="w-full rounded-xl border border-gray-200 bg-white divide-y divide-gray-100 text-xs overflow-hidden mt-2">
                 <PreviewField icon={User}      value={displayName} placeholder="Your name" />

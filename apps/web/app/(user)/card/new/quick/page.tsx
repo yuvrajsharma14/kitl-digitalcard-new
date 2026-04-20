@@ -287,7 +287,11 @@ export default function QuickCardPage() {
                   previewName={displayName || "Your Name"}
                   previewTitle={jobTitle || undefined}
                   previewCompany={company || undefined}
+                  previewEmail={email || undefined}
+                  previewPhone={phone || undefined}
                   previewAvatar={avatarPreview}
+                  hideIfNoAvatar
+                  hideEmptyFields
                 />
 
                 <div className="flex justify-between pt-2">

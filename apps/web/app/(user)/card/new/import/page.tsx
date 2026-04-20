@@ -535,7 +535,16 @@ export default function ImportCardPage() {
                   previewName={displayName}
                   previewTitle={jobTitle || undefined}
                   previewCompany={company || undefined}
+                  previewEmail={email || undefined}
+                  previewPhone={phone || undefined}
+                  previewWebsite={website || undefined}
                   previewAvatar={avatarPreview}
+                  previewLinkedin={socialLinks.find((l) => l.platform === "LINKEDIN")?.url}
+                  previewFacebook={socialLinks.find((l) => l.platform === "FACEBOOK")?.url}
+                  previewInstagram={socialLinks.find((l) => l.platform === "INSTAGRAM")?.url}
+                  previewTwitter={socialLinks.find((l) => l.platform === "TWITTER")?.url}
+                  hideIfNoAvatar
+                  hideEmptyFields
                 />
 
                 <div className="flex justify-between pt-2">

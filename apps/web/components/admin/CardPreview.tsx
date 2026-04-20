@@ -14,13 +14,6 @@ import {
 // ─── Sample assets ────────────────────────────────────────────────────────────
 
 /**
- * Professional male portrait from Unsplash.
- * Consistent, well-framed, reliable.
- */
-const HEADSHOT_URL =
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80";
-
-/**
  * Per-layout professional banner images — each chosen to match the layout's theme.
  * The accent-colour overlay applied on top makes them feel "branded" to the template.
  */
@@ -64,14 +57,31 @@ function makeLogoSvg(accentHex: string, onDark = false): string {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface CardPreviewProps {
-  config:          TemplateConfig;
-  size?:           "sm" | "lg";
-  sampleName?:     string;
-  sampleTitle?:    string;
-  sampleCompany?:  string;
-  sampleTagline?:  string;
-  sampleUrl?:      string;
-  sampleAvatar?:   string | null;
+  config:             TemplateConfig;
+  size?:              "sm" | "lg";
+  sampleName?:        string;
+  sampleTitle?:       string;
+  sampleCompany?:     string;
+  sampleTagline?:     string;
+  sampleEmail?:       string;
+  samplePhone?:       string;
+  sampleWebsite?:     string;
+  sampleUrl?:         string;
+  sampleAvatar?:      string | null;
+  /** User-provided logo URL — when hideEmptyFields is true, logo only appears if set */
+  sampleLogo?:        string | null;
+  /** User-provided social URLs — when hideEmptyFields is true, icons only appear if set */
+  sampleLinkedin?:    string;
+  sampleFacebook?:    string;
+  sampleInstagram?:   string;
+  sampleTwitter?:     string;
+  defaultFlipped?:    boolean;
+  /** Render only the card face — no toggle pills, no 3D container. Used for PDF/print capture. */
+  staticFace?:        "front" | "back";
+  /** When true, hide the headshot slot entirely if no sampleAvatar is provided. */
+  hideIfNoAvatar?:    boolean;
+  /** When true, hide every field whose sample value is empty/undefined. */
+  hideEmptyFields?:   boolean;
 }
 
 const SAMPLE_URL = "https://mydigitalcard.app/u/alex-johnson";
@@ -92,22 +102,61 @@ function resolveFields(fields?: TemplateFields): TemplateFields {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// Sample fallbacks used only in admin/demo mode (when hideEmptyFields is false)
+const SAMPLE_TITLE    = "Senior Product Designer";
+const SAMPLE_COMPANY  = "KITLabs Inc.";
+const SAMPLE_TAGLINE  = "Building products people love.";
+const SAMPLE_EMAIL    = "alex@kitlabs.com";
+const SAMPLE_PHONE    = "+1 (415) 555-0192";
+const SAMPLE_WEBSITE  = "kitlabs.com";
+
 export function CardPreview({
   config,
-  size          = "sm",
-  sampleName    = "Alex Johnson",
-  sampleTitle   = "Senior Product Designer",
-  sampleCompany = "KITLabs Inc.",
-  sampleTagline = "Building products people love.",
-  sampleUrl     = SAMPLE_URL,
-  sampleAvatar  = null,
+  size             = "sm",
+  sampleName       = "Alex Johnson",
+  sampleTitle,
+  sampleCompany,
+  sampleTagline,
+  sampleEmail,
+  samplePhone,
+  sampleWebsite,
+  sampleUrl        = SAMPLE_URL,
+  sampleAvatar     = null,
+  sampleLogo       = null,
+  sampleLinkedin,
+  sampleFacebook,
+  sampleInstagram,
+  sampleTwitter,
+  defaultFlipped   = false,
+  staticFace,
+  hideIfNoAvatar   = false,
+  hideEmptyFields  = false,
 }: CardPreviewProps) {
   const { layout, backgroundColor, textColor, accentColor, fontFamily } = config;
   const lg = size === "lg";
 
-  const [flipped, setFlipped] = useState(false);
+  const [flipped, setFlipped] = useState(defaultFlipped);
 
   const f = resolveFields(config.fields);
+
+  // In admin/demo mode fall back to sample strings; in user mode use raw value (undefined = hide)
+  const displayTitle   = hideEmptyFields ? sampleTitle   : (sampleTitle   ?? SAMPLE_TITLE);
+  const displayCompany = hideEmptyFields ? sampleCompany : (sampleCompany ?? SAMPLE_COMPANY);
+  const displayTagline = hideEmptyFields ? sampleTagline : (sampleTagline ?? SAMPLE_TAGLINE);
+  const displayEmail   = hideEmptyFields ? sampleEmail   : (sampleEmail   ?? SAMPLE_EMAIL);
+  const displayPhone   = hideEmptyFields ? samplePhone   : (samplePhone   ?? SAMPLE_PHONE);
+  const displayWebsite = hideEmptyFields ? sampleWebsite : (sampleWebsite ?? SAMPLE_WEBSITE);
+
+  // Suppress headshot slot when caller opted in and no real avatar was provided
+  const showHeadshot = f.headshot && (!hideIfNoAvatar || !!sampleAvatar);
+
+  // Suppress any field whose resolved display value is absent
+  const he = hideEmptyFields;
+  const showLogo    = f.logo    && (!he || !!sampleLogo);
+  const showJobTitle = f.jobTitle && (!he || !!displayTitle);
+  const showCompany  = f.company  && (!he || !!displayCompany);
+  const showTagline  = f.tagline  && (!he || !!displayTagline);
+  const showBio      = f.bio      && (!he || !!displayTagline);
 
   const maxW = lg ? "w-[370px]" : "w-[260px]";
 
@@ -152,18 +201,37 @@ export function CardPreview({
       shadow = `0 0 0 2px ${ring ?? accentColor}66, 0 2px 8px rgba(0,0,0,0.10)`;
     }
 
+    // Avatar fill — subtle tint of the accent colour for the placeholder bg
+    const avatarBg  = `${accentColor}22`;
+    const avatarFg  = dark ? "rgba(255,255,255,0.55)" : `${accentColor}cc`;
+
     return (
       <div
         className={`rounded-full overflow-hidden shrink-0 relative ${cls ?? ""}`}
         style={{ boxShadow: shadow }}
       >
-        <img
-          src={sampleAvatar ?? HEADSHOT_URL}
-          alt="Sample headshot"
-          className="w-full h-full object-cover"
-          style={{ objectPosition: "50% 15%" }}
-          referrerPolicy="no-referrer"
-        />
+        {sampleAvatar ? (
+          <img
+            src={sampleAvatar}
+            alt="Headshot"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "50% 15%" }}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          /* Generic person silhouette — no real photo, no external request */
+          <svg
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full"
+            style={{ background: avatarBg }}
+          >
+            {/* Head */}
+            <circle cx="50" cy="36" r="20" fill={avatarFg} />
+            {/* Shoulders / body */}
+            <ellipse cx="50" cy="85" rx="32" ry="24" fill={avatarFg} />
+          </svg>
+        )}
       </div>
     );
   };
@@ -217,13 +285,14 @@ export function CardPreview({
   );
 
   // Active socials
-  const SOCIAL_DEFS: { key: keyof TemplateFields; Icon: React.ElementType }[] = [
-    { key: "linkedin",  Icon: Linkedin  },
-    { key: "facebook",  Icon: Facebook  },
-    { key: "instagram", Icon: Instagram },
-    { key: "twitter",   Icon: Twitter   },
+  const SOCIAL_DEFS: { key: keyof TemplateFields; Icon: React.ElementType; sample: string | undefined }[] = [
+    { key: "linkedin",  Icon: Linkedin,  sample: sampleLinkedin  },
+    { key: "facebook",  Icon: Facebook,  sample: sampleFacebook  },
+    { key: "instagram", Icon: Instagram, sample: sampleInstagram },
+    { key: "twitter",   Icon: Twitter,   sample: sampleTwitter   },
   ];
-  const socials = SOCIAL_DEFS.filter(({ key }) => f[key]);
+  // In user mode (hideEmptyFields) only show icons for platforms the user actually filled in
+  const socials = SOCIAL_DEFS.filter(({ key, sample }) => f[key] && (!hideEmptyFields || !!sample));
 
   const SocialRow = ({
     dark = false,
@@ -244,10 +313,10 @@ export function CardPreview({
 
   // Active contact items
   const contacts = [
-    { key: "email"   as const, Icon: Mail,  label: "alex@kitlabs.com"  },
-    { key: "phone"   as const, Icon: Phone, label: "+1 (415) 555-0192"  },
-    { key: "website" as const, Icon: Globe, label: "kitlabs.com"         },
-  ].filter(({ key }) => f[key]);
+    { key: "email"   as const, Icon: Mail,  label: displayEmail   },
+    { key: "phone"   as const, Icon: Phone, label: displayPhone   },
+    { key: "website" as const, Icon: Globe, label: displayWebsite },
+  ].filter(({ key, label }) => f[key] && (!he || !!label));
 
   const Contacts = ({
     cls    = "",
@@ -282,24 +351,24 @@ export function CardPreview({
         <p className={`${ns} font-bold leading-snug`} style={{ color: dark ? onA : textColor }}>
           {sampleName}
         </p>
-        {f.jobTitle && (
+        {showJobTitle && (
           <p className="text-[11px] font-semibold mt-0.5" style={{ color: dark ? onAMut : accentColor }}>
-            {sampleTitle}
+            {displayTitle}
           </p>
         )}
-        {f.company && (
+        {showCompany && (
           <p className="text-[10px] mt-0.5 opacity-55" style={{ color: dark ? onA : textColor }}>
-            {sampleCompany}
+            {displayCompany}
           </p>
         )}
-        {f.tagline && (
+        {showTagline && (
           <p className="text-[9px] italic mt-0.5 opacity-60" style={{ color: dark ? onA : accentColor }}>
-            &ldquo;{sampleTagline}&rdquo;
+            &ldquo;{displayTagline}&rdquo;
           </p>
         )}
-        {f.bio && sampleTagline && lg && (
+        {showBio && lg && (
           <p className="text-[9px] mt-2 leading-relaxed opacity-40 line-clamp-2">
-            {sampleTagline}
+            {displayTagline}
           </p>
         )}
       </div>
@@ -325,16 +394,16 @@ export function CardPreview({
         {f.banner && (
           <Banner
             banH={banH}
-            logoSlot={f.logo ? <Logo dark cls={lg ? "h-8 w-16" : "h-6 w-12"} /> : undefined}
+            logoSlot={showLogo ? <Logo dark cls={lg ? "h-8 w-16" : "h-6 w-12"} /> : undefined}
           />
         )}
-        {f.headshot && (
+        {showHeadshot && (
           <div className="flex justify-center">
             <Headshot cls={`${hsW} ${hsFlt}`} float />
           </div>
         )}
-        {!f.banner && f.logo && (
-          <div className={`flex justify-center ${f.headshot ? "mt-3" : "mt-5"}`}>
+        {!f.banner && showLogo && (
+          <div className={`flex justify-center ${showHeadshot ? "mt-3" : "mt-5"}`}>
             <Logo cls={lg ? "h-9 w-20" : "h-7 w-16"} />
           </div>
         )}
@@ -356,11 +425,11 @@ export function CardPreview({
       <div style={cardSty} className="w-full rounded-2xl shadow-lg overflow-hidden border border-black/[0.06]">
         {f.banner && <Banner banH={lg ? "h-12" : "h-9"} />}
         <div className={`flex items-start gap-3 ${lg ? "p-5" : "p-4"}`}>
-          {f.headshot && <Headshot cls={`${hsW} rounded-xl`} />}
+          {showHeadshot && <Headshot cls={`${hsW} rounded-xl`} />}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1"><Identity /></div>
-              {f.logo && <Logo cls={lg ? "h-8 w-16 ml-1" : "h-6 w-12 ml-1"} />}
+              {showLogo && <Logo cls={lg ? "h-8 w-16 ml-1" : "h-6 w-12 ml-1"} />}
             </div>
           </div>
         </div>
@@ -393,10 +462,10 @@ export function CardPreview({
             <Banner banH={lg ? "h-12" : "h-9"} />
           </div>
         )}
-        {(f.logo || f.headshot) && (
+        {(showLogo || showHeadshot) && (
           <div className="flex items-start justify-between mb-4">
-            {f.logo ? <Logo cls={lg ? "h-10 w-20" : "h-7 w-14"} /> : <div />}
-            {f.headshot && <Headshot cls={`${hsW} rounded-2xl`} />}
+            {showLogo ? <Logo cls={lg ? "h-10 w-20" : "h-7 w-14"} /> : <div />}
+            {showHeadshot && <Headshot cls={`${hsW} rounded-2xl`} />}
           </div>
         )}
         <div style={{ backgroundColor: accentColor }} className={`h-0.5 rounded-full mb-3 ${lg ? "w-12" : "w-8"}`} />
@@ -423,16 +492,16 @@ export function CardPreview({
         {f.banner && (
           <Banner
             banH={banH}
-            logoSlot={f.logo ? <Logo dark cls={lg ? "h-8 w-16" : "h-6 w-12"} /> : undefined}
+            logoSlot={showLogo ? <Logo dark cls={lg ? "h-8 w-16" : "h-6 w-12"} /> : undefined}
           />
         )}
-        {f.headshot && (
+        {showHeadshot && (
           <div style={{ backgroundColor }} className="flex justify-center">
             <Headshot cls={`${hsW} ${hsFlt}`} float />
           </div>
         )}
-        {!f.banner && f.logo && (
-          <div style={{ backgroundColor }} className={`flex justify-center ${f.headshot ? "mt-3" : "mt-5"}`}>
+        {!f.banner && showLogo && (
+          <div style={{ backgroundColor }} className={`flex justify-center ${showHeadshot ? "mt-3" : "mt-5"}`}>
             <Logo cls={lg ? "h-9 w-20" : "h-7 w-16"} />
           </div>
         )}
@@ -458,8 +527,8 @@ export function CardPreview({
             </div>
           )}
           <div className="flex items-start justify-between mb-3">
-            {f.headshot ? <Headshot cls={`${hsW} rounded-xl`} /> : <div />}
-            {f.logo && <Logo cls={lg ? "h-8 w-16" : "h-6 w-12"} />}
+            {showHeadshot ? <Headshot cls={`${hsW} rounded-xl`} /> : <div />}
+            {showLogo && <Logo cls={lg ? "h-8 w-16" : "h-6 w-12"} />}
           </div>
           <div style={{ backgroundColor: accentColor + "33" }} className="h-px w-full mb-3" />
           <Identity />
@@ -497,32 +566,32 @@ export function CardPreview({
               <p className={`${lg ? "text-lg" : "text-base"} font-extrabold leading-tight`} style={{ color: onA }}>
                 {sampleName}
               </p>
-              {f.jobTitle && (
+              {showJobTitle && (
                 <p className="text-[11px] font-semibold mt-1" style={{ color: onAMut }}>
-                  {sampleTitle}
+                  {displayTitle}
                 </p>
               )}
-              {f.logo && (
+              {showLogo && (
                 <div className="mt-3">
                   <Logo dark cls={lg ? "h-7 w-16" : "h-6 w-12"} />
                 </div>
               )}
             </div>
-            {f.headshot && <Headshot cls={`${hsW} shrink-0`} dark />}
+            {showHeadshot && <Headshot cls={`${hsW} shrink-0`} dark />}
           </div>
         </div>
         <div style={cardSty} className={`${lg ? "px-6 py-4" : "px-4 py-3"}`}>
-          {(f.company || f.tagline || f.bio) && (
+          {(showCompany || showTagline || showBio) && (
             <div className="mb-3">
-              {f.company && <p className="text-[11px] opacity-55">{sampleCompany}</p>}
-              {f.tagline && (
+              {showCompany && <p className="text-[11px] opacity-55">{displayCompany}</p>}
+              {showTagline && (
                 <p className="text-[10px] italic mt-0.5 opacity-60" style={aText}>
-                  &ldquo;{sampleTagline}&rdquo;
+                  &ldquo;{displayTagline}&rdquo;
                 </p>
               )}
-              {f.bio && sampleTagline && lg && (
+              {showBio && lg && (
                 <p className="text-[9px] opacity-35 mt-2 leading-relaxed line-clamp-2">
-                  {sampleTagline}
+                  {displayTagline}
                 </p>
               )}
             </div>
@@ -544,16 +613,16 @@ export function CardPreview({
         {f.banner && (
           <Banner
             banH={banH}
-            logoSlot={f.logo ? <Logo dark cls={lg ? "h-7 w-14" : "h-5 w-10"} /> : undefined}
+            logoSlot={showLogo ? <Logo dark cls={lg ? "h-7 w-14" : "h-5 w-10"} /> : undefined}
           />
         )}
-        {f.headshot && (
+        {showHeadshot && (
           <div className="flex justify-center">
             <Headshot cls={`${hsW} ${hsFlt}`} float />
           </div>
         )}
-        {!f.banner && f.logo && (
-          <div className={`flex justify-center ${f.headshot ? "mt-3" : "mt-5"}`}>
+        {!f.banner && showLogo && (
+          <div className={`flex justify-center ${showHeadshot ? "mt-3" : "mt-5"}`}>
             <Logo cls={lg ? "h-9 w-20" : "h-7 w-14"} />
           </div>
         )}
@@ -598,8 +667,8 @@ export function CardPreview({
           style={aBg}
           className={`${sideW} shrink-0 flex flex-col items-center ${lg ? "py-6 px-3 gap-4" : "py-4 px-2 gap-3"}`}
         >
-          {f.headshot && <Headshot cls={lg ? "h-16 w-16" : "h-12 w-12"} dark />}
-          {f.logo && <Logo dark cls={lg ? "h-7 w-20" : "h-5 w-14"} />}
+          {showHeadshot && <Headshot cls={lg ? "h-16 w-16" : "h-12 w-12"} dark />}
+          {showLogo && <Logo dark cls={lg ? "h-7 w-20" : "h-5 w-14"} />}
           <div className="w-8 h-px bg-white/25" />
           {socials.length > 0 && (
             <div className="flex flex-col items-center gap-2">
@@ -686,18 +755,22 @@ export function CardPreview({
           >
             {sampleName}
           </p>
-          <p
-            className="text-[11px] font-semibold"
-            style={{ color: accentColor }}
-          >
-            {sampleTitle}
-          </p>
-          <p
-            className="text-[10px] opacity-50"
-            style={{ color: textColor }}
-          >
-            {sampleCompany}
-          </p>
+          {showJobTitle && (
+            <p
+              className="text-[11px] font-semibold"
+              style={{ color: accentColor }}
+            >
+              {displayTitle}
+            </p>
+          )}
+          {showCompany && (
+            <p
+              className="text-[10px] opacity-50"
+              style={{ color: textColor }}
+            >
+              {displayCompany}
+            </p>
+          )}
         </div>
       </div>
 
@@ -714,6 +787,11 @@ export function CardPreview({
   );
 
   // ─── Flip toggle + 3-D card container ────────────────────────────────────────
+
+  // Static face — bare card only, no controls or 3D container (used for PDF/print capture)
+  if (staticFace) {
+    return staticFace === "back" ? backCard : frontCard;
+  }
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -755,6 +833,8 @@ export function CardPreview({
             transition:      "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
             transform:       flipped ? "rotateY(180deg)" : "rotateY(0deg)",
             position:        "relative",
+            // Ensure the back card always has enough height to show QR + name + branding
+            minHeight:       lg ? "280px" : "240px",
           }}
         >
           {/* Front face */}

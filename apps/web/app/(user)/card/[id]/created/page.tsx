@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { CardPreview } from "@/components/admin/CardPreview";
 import { DEFAULT_TEMPLATE_CONFIG } from "@/lib/types/template";
+import type { TemplateConfig } from "@/lib/types/template";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,8 +112,11 @@ export default function CardCreatedPage() {
   const [loading,     setLoading]     = useState(true);
   const [publishing,  setPublishing]  = useState(false);
   const [copied,      setCopied]      = useState(false);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
 
-  const qrRef = useRef<HTMLDivElement>(null);
+  const qrRef      = useRef<HTMLDivElement>(null);
+  const cardFront  = useRef<HTMLDivElement>(null);
+  const cardBack   = useRef<HTMLDivElement>(null);
 
   // ── Fetch card ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -199,8 +203,74 @@ export default function CardCreatedPage() {
     URL.revokeObjectURL(url);
   }
 
-  // ── Print / PDF ────────────────────────────────────────────────────────────
-  function printCard() { window.print(); }
+  // ── Print card (front only via CSS print) ─────────────────────────────────
+  function printCard() {
+    const front = cardFront.current;
+    if (!front) return;
+    const html = `<!DOCTYPE html><html><head><title>${card?.displayName ?? "Card"}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f3f4f6; }
+      </style></head><body>${front.innerHTML}</body></html>`;
+    const w = window.open("", "_blank", "width=600,height=500");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 500);
+  }
+
+  // ── Download PDF (front + back as two pages) ───────────────────────────────
+  async function downloadPdf() {
+    if (!card || !cardFront.current || !cardBack.current) return;
+    setPdfLoading(true);
+    try {
+      const [html2canvas, { jsPDF }] = await Promise.all([
+        import("html2canvas").then((m) => m.default),
+        import("jspdf"),
+      ]);
+
+      // Capture front
+      const frontCanvas = await html2canvas(cardFront.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      // Capture back
+      const backCanvas = await html2canvas(cardBack.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      // Standard business card ratio: 3.5" x 2" = 252pt x 144pt
+      const W = frontCanvas.width  / 3;
+      const H = frontCanvas.height / 3;
+      const pxToPt = 72 / 96; // CSS px → points
+      const ptW = W * pxToPt;
+      const ptH = H * pxToPt;
+
+      const pdf = new jsPDF({
+        orientation: ptW > ptH ? "landscape" : "portrait",
+        unit: "pt",
+        format: [ptW, ptH],
+      });
+
+      // Page 1: front
+      pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, ptW, ptH);
+
+      // Page 2: back
+      pdf.addPage([ptW, ptH], ptW > ptH ? "landscape" : "portrait");
+      pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", 0, 0, ptW, ptH);
+
+      pdf.save(`${card.slug ?? "card"}.pdf`);
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   // ── CardPreview config ─────────────────────────────────────────────────────
   const config = card?.styles
@@ -269,11 +339,17 @@ export default function CardCreatedPage() {
           <div className="w-full">
             <CardPreview
               config={config as Parameters<typeof CardPreview>[0]["config"]}
+              size="lg"
               sampleName={card.displayName}
               sampleTitle={card.jobTitle ?? undefined}
               sampleCompany={card.company ?? undefined}
               sampleTagline={card.bio ?? undefined}
+              sampleEmail={card.email ?? undefined}
+              samplePhone={card.phone ?? undefined}
+              sampleWebsite={card.website ?? undefined}
               sampleAvatar={card.avatarUrl}
+              hideIfNoAvatar
+              hideEmptyFields
               key={card.id}
             />
           </div>
@@ -385,15 +461,16 @@ export default function CardCreatedPage() {
                 <ActionCard
                   icon={Printer}
                   label="Print Card"
-                  description="Print a physical copy of your card"
+                  description="Sends card front &amp; back to your printer"
                   onClick={printCard}
                   variant="default"
                 />
                 <ActionCard
                   icon={FileText}
-                  label="Save as PDF"
-                  description="Use browser print → Save as PDF"
-                  onClick={printCard}
+                  label="Download PDF"
+                  description="Front &amp; back as a 2-page PDF file"
+                  onClick={downloadPdf}
+                  loading={pdfLoading}
                   variant="default"
                 />
                 <ActionCard
@@ -429,6 +506,46 @@ export default function CardCreatedPage() {
             </div>
 
           </div>
+        </div>
+      </div>
+
+      {/* ── Hidden card faces for PDF/Print capture — no controls, no 3D ── */}
+      <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden>
+        <div ref={cardFront}>
+          <CardPreview
+            config={config as TemplateConfig}
+            size="lg"
+            sampleName={card.displayName}
+            sampleTitle={card.jobTitle ?? undefined}
+            sampleCompany={card.company ?? undefined}
+            sampleTagline={card.bio ?? undefined}
+            sampleEmail={card.email ?? undefined}
+            samplePhone={card.phone ?? undefined}
+            sampleWebsite={card.website ?? undefined}
+            sampleAvatar={card.avatarUrl}
+            staticFace="front"
+            hideIfNoAvatar
+            hideEmptyFields
+            key={`front-${card.id}`}
+          />
+        </div>
+        <div ref={cardBack}>
+          <CardPreview
+            config={config as TemplateConfig}
+            size="lg"
+            sampleName={card.displayName}
+            sampleTitle={card.jobTitle ?? undefined}
+            sampleCompany={card.company ?? undefined}
+            sampleTagline={card.bio ?? undefined}
+            sampleEmail={card.email ?? undefined}
+            samplePhone={card.phone ?? undefined}
+            sampleWebsite={card.website ?? undefined}
+            sampleAvatar={card.avatarUrl}
+            staticFace="back"
+            hideIfNoAvatar
+            hideEmptyFields
+            key={`back-${card.id}`}
+          />
         </div>
       </div>
     </div>

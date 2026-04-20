@@ -18,12 +18,21 @@ export interface Template {
 }
 
 interface TemplatePickerProps {
-  selectedId:      string | null;
-  onChange:        (template: Template) => void;
-  previewName?:    string;
-  previewTitle?:   string;
-  previewCompany?: string;
-  previewAvatar?:  string | null;
+  selectedId:         string | null;
+  onChange:           (template: Template) => void;
+  previewName?:       string;
+  previewTitle?:      string;
+  previewCompany?:    string;
+  previewEmail?:      string;
+  previewPhone?:      string;
+  previewWebsite?:    string;
+  previewAvatar?:     string | null;
+  previewLinkedin?:   string;
+  previewFacebook?:   string;
+  previewInstagram?:  string;
+  previewTwitter?:    string;
+  hideIfNoAvatar?:    boolean;
+  hideEmptyFields?:   boolean;
 }
 
 export function TemplatePicker({
@@ -32,7 +41,16 @@ export function TemplatePicker({
   previewName,
   previewTitle,
   previewCompany,
+  previewEmail,
+  previewPhone,
+  previewWebsite,
   previewAvatar,
+  previewLinkedin,
+  previewFacebook,
+  previewInstagram,
+  previewTwitter,
+  hideIfNoAvatar  = false,
+  hideEmptyFields = false,
 }: TemplatePickerProps) {
   const [templates, setTemplates]             = useState<Template[]>([]);
   const [loading, setLoading]                 = useState(true);
@@ -100,17 +118,16 @@ export function TemplatePicker({
                   </div>
                 )}
 
-                {/* Card thumbnail */}
+                {/* Card thumbnail — scale the full 260 px card down to ~120 px wide */}
                 <div className="flex justify-center overflow-hidden rounded-xl">
-                  <div className="scale-[0.46] origin-top" style={{ height: "120px", width: "120px" }}>
-                    <CardPreview
-                      config={config}
-                      size="sm"
-                      sampleName={previewName ?? "Your Name"}
-                      sampleTitle={previewTitle ?? "Your Title"}
-                      sampleCompany={previewCompany ?? "Your Company"}
-                      sampleAvatar={previewAvatar}
-                    />
+                  {/* Clipping box sized to the visual result of 260×196 px scaled at 0.46 */}
+                  <div style={{ width: "120px", height: "90px", overflow: "hidden", position: "relative", flexShrink: 0 }}>
+                    <div style={{ width: "260px", transform: "scale(0.46)", transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
+                      <CardPreview
+                        config={config}
+                        size="sm"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -175,20 +192,33 @@ export function TemplatePicker({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 px-6 py-10 gap-3">
+          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 px-6 py-8 gap-4">
             {previewConfig && (
               <CardPreview
                 config={previewConfig}
                 size="lg"
                 sampleName={previewName ?? "Your Name"}
-                sampleTitle={previewTitle ?? "Your Title"}
-                sampleCompany={previewCompany ?? "Your Company"}
+                sampleTitle={hideEmptyFields ? previewTitle : (previewTitle ?? "Your Title")}
+                sampleCompany={hideEmptyFields ? previewCompany : (previewCompany ?? "Your Company")}
+                sampleEmail={previewEmail}
+                samplePhone={previewPhone}
+                sampleWebsite={previewWebsite}
                 sampleAvatar={previewAvatar}
+                sampleLinkedin={previewLinkedin}
+                sampleFacebook={previewFacebook}
+                sampleInstagram={previewInstagram}
+                sampleTwitter={previewTwitter}
+                hideIfNoAvatar={hideIfNoAvatar}
+                hideEmptyFields={hideEmptyFields}
               />
             )}
-            <p className="text-[11px] text-gray-400 mt-2">
-              Tap the card to flip and see the back
-            </p>
+
+            {/* Hint — only shown in user mode where fields may be incomplete */}
+            {hideEmptyFields && (
+              <p className="text-[11px] text-center text-gray-400 max-w-[260px] leading-relaxed">
+                Only your entered details are shown. You can always add or edit information after creating your card.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-100 bg-white">
