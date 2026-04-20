@@ -57,8 +57,6 @@ export default function BuilderPage() {
   // ── Status ──
   const [error,  setError]  = useState("");
   const [saving, setSaving] = useState(false);
-  const [done,   setDone]   = useState(false);
-
   const initials = displayName
     ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
@@ -154,31 +152,10 @@ export default function BuilderPage() {
 
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Failed to create card."); return; }
-      setDone(true);
-      setTimeout(() => router.push("/dashboard"), 2500);
+      router.push(`/card/${data.card.id}/created`);
     } finally {
       setSaving(false);
     }
-  }
-
-  // ── Done state ──────────────────────────────────────────────────
-
-  if (done) {
-    return (
-      <div className="flex flex-col overflow-hidden h-full">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-6">
-          <PenLine className="h-4 w-4 text-indigo-500" />
-          <span className="text-sm font-semibold text-gray-800">Build from Scratch</span>
-        </header>
-        <main className="flex-1 flex flex-col items-center justify-center text-center p-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-5">
-            <CheckCircle2 className="h-10 w-10 text-green-500" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Card created!</h2>
-          <p className="text-sm text-gray-500">Redirecting to your dashboard…</p>
-        </main>
-      </div>
-    );
   }
 
   // ── Render ──────────────────────────────────────────────────────

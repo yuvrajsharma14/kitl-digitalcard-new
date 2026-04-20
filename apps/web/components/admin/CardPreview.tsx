@@ -297,9 +297,9 @@ export function CardPreview({
             &ldquo;{sampleTagline}&rdquo;
           </p>
         )}
-        {f.bio && lg && (
+        {f.bio && sampleTagline && lg && (
           <p className="text-[9px] mt-2 leading-relaxed opacity-40 line-clamp-2">
-            Passionate about design and creating delightful experiences for people everywhere.
+            {sampleTagline}
           </p>
         )}
       </div>
@@ -520,9 +520,9 @@ export function CardPreview({
                   &ldquo;{sampleTagline}&rdquo;
                 </p>
               )}
-              {f.bio && lg && (
+              {f.bio && sampleTagline && lg && (
                 <p className="text-[9px] opacity-35 mt-2 leading-relaxed line-clamp-2">
-                  Passionate about design and creating delightful user experiences.
+                  {sampleTagline}
                 </p>
               )}
             </div>
