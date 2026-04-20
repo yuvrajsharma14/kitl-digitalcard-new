@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ArrowLeft, ArrowRight, Loader2, CheckCircle2, Zap, Upload, X } from "lucide-react";
+import { Camera, ArrowLeft, ArrowRight, Loader2, Zap, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -109,8 +109,7 @@ export default function QuickCardPage() {
 
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Failed to create card."); return; }
-      setStep(2);
-      setTimeout(() => router.push("/dashboard"), 2500);
+      router.push(`/card/${data.card.id}/created`);
     } finally {
       setSaving(false);
     }
@@ -304,16 +303,6 @@ export default function QuickCardPage() {
               </div>
             )}
 
-            {/* ── Step 2: Done ── */}
-            {step === 2 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-5">
-                  <CheckCircle2 className="h-10 w-10 text-green-500" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Card created!</h2>
-                <p className="text-sm text-gray-500">Redirecting you to your dashboard…</p>
-              </div>
-            )}
           </div>
         </main>
       </div>
