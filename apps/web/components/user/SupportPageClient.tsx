@@ -102,7 +102,9 @@ export function SupportPageClient({ tickets: initialTickets }: Props) {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-8">
+    <div className="flex flex-col overflow-hidden h-full">
+    <div className="flex-1 overflow-y-auto p-8">
+    <div className="max-w-3xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -210,6 +212,8 @@ export function SupportPageClient({ tickets: initialTickets }: Props) {
           ))}
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 }

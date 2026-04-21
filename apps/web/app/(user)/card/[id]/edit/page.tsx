@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Loader2, Save, Camera, Upload, X,
   Mail, Phone, Globe, AtSign,
   User, Briefcase, Building2, AlignLeft,
-  Palette, CheckCircle2,
+  Palette, CheckCircle2, Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -90,6 +90,7 @@ function PreviewField({ icon: Icon, value, placeholder }: { icon: React.ElementT
 
 export default function EditCardPage() {
   const { id: cardId } = useParams<{ id: string }>();
+  const router  = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
   // ── Load state ──
@@ -118,9 +119,11 @@ export default function EditCardPage() {
   const [existingStyles, setExistingStyles]      = useState<Record<string, unknown> | null>(null);
 
   // ── Status ──
-  const [error,   setError]   = useState("");
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [error,       setError]       = useState("");
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [confirmDel,  setConfirmDel]  = useState(false);
+  const [deleting,    setDeleting]    = useState(false);
 
   // ── Fetch card on mount ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -261,6 +264,18 @@ export default function EditCardPage() {
     }
   }
 
+  // ── Delete card ───────────────────────────────────────────────────────────────
+
+  async function deleteCard() {
+    setDeleting(true);
+    try {
+      await fetch(`/api/v1/cards/${cardId}`, { method: "DELETE" });
+      router.push("/dashboard");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   if (loading) return (
@@ -307,6 +322,36 @@ export default function EditCardPage() {
               <span className={cn("h-1.5 w-1.5 rounded-full", isPublished ? "bg-green-500" : "bg-gray-400")} />
               {isPublished ? "Published" : "Draft"}
             </button>
+
+            {/* Delete button / confirm */}
+            {confirmDel ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 hidden sm:inline">Delete this card?</span>
+                <button
+                  onClick={deleteCard}
+                  disabled={deleting}
+                  className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
+                >
+                  {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setConfirmDel(false)}
+                  disabled={deleting}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDel(true)}
+                className="flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors"
+                title="Delete card"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
 
             {/* Save button */}
             <Button
@@ -459,8 +504,38 @@ export default function EditCardPage() {
                 )}
               </section>
 
-              {/* ══ Bottom save ═══════════════════════════════════════════════ */}
-              <div className="flex justify-end pb-6">
+              {/* ══ Bottom save + delete ══════════════════════════════════════ */}
+              <div className="flex items-center justify-between pb-6">
+                {/* Delete */}
+                {confirmDel ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Delete this card?</span>
+                    <button
+                      onClick={deleteCard}
+                      disabled={deleting}
+                      className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
+                    >
+                      {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Yes, delete"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDel(false)}
+                      disabled={deleting}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDel(true)}
+                    className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" /> Delete card
+                  </button>
+                )}
+
+                {/* Save */}
                 <Button
                   onClick={saveCard}
                   disabled={saving}

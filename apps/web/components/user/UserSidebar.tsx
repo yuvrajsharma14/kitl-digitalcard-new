@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   CreditCard,
+  BarChart2,
   LifeBuoy,
   Settings,
   LogOut,
@@ -20,10 +21,11 @@ import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard",   icon: LayoutDashboard, exact: true },
-  { href: "/card",       label: "My Cards",    icon: CreditCard,      exact: false },
-  { href: "/support",   label: "Support",     icon: LifeBuoy,        exact: false },
-  { href: "/settings",  label: "Settings",    icon: Settings,        exact: false },
+  { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard, exact: true  },
+  { href: "/card",       label: "My Cards",   icon: CreditCard,      exact: false },
+  { href: "/analytics",  label: "Analytics",  icon: BarChart2,       exact: false },
+  { href: "/support",    label: "Support",    icon: LifeBuoy,        exact: false },
+  { href: "/settings",   label: "Settings",   icon: Settings,        exact: false },
 ];
 
 function NavItem({

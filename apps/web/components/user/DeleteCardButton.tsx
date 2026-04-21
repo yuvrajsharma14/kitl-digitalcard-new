@@ -28,7 +28,7 @@ export function DeleteCardButton({ cardId, displayName }: Props) {
   if (confirming) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-gray-500 truncate">Delete "{displayName}"?</span>
+        <span className="text-xs text-gray-500 truncate">Delete &ldquo;{displayName}&rdquo;?</span>
         <button
           onClick={handleDelete}
           disabled={deleting}

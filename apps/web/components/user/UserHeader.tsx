@@ -12,9 +12,10 @@ import Link from "next/link";
 interface UserHeaderProps {
   title:     string;
   subtitle?: string;
+  children?: React.ReactNode;
 }
 
-export function UserHeader({ title, subtitle }: UserHeaderProps) {
+export function UserHeader({ title, subtitle, children }: UserHeaderProps) {
   const { data: session } = useSession();
 
   const initials = session?.user?.name
@@ -28,7 +29,9 @@ export function UserHeader({ title, subtitle }: UserHeaderProps) {
         {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
       </div>
 
-      <DropdownMenu>
+      <div className="flex items-center gap-3">
+        {children}
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
             <Avatar className="h-8 w-8">
@@ -64,7 +67,8 @@ export function UserHeader({ title, subtitle }: UserHeaderProps) {
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
