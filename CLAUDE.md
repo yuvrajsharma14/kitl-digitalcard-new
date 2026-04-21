@@ -102,7 +102,7 @@ Digital Card New/
 | Model | Description |
 |---|---|
 | User | Registered users (role: USER or ADMIN) |
-| Card | Digital business cards (slug = public URL). `styles Json?` stores snapshot of applied template config |
+| Card | Digital business cards (slug = public URL). `styles Json?` stores snapshot of applied template config. `isPrimary Boolean` marks the user's designated primary card (only one per user) |
 | CardTemplate | Admin-created visual templates. No FK to Card — config is copied (snapshot) when user picks a template |
 | SocialLink | Social media links on a card |
 | CardAnalytics | Aggregated view/click counts per card |
@@ -133,12 +133,16 @@ Digital Card New/
 | 4 | Admin Portal — Dashboard, User Management, Card Management | ✅ Done |
 | 4a | Admin Portal — Card Template Management | ✅ Done |
 | 4b | Support Tickets (user submit + admin manage) | ✅ Done |
-| 5 | User Portal — Card Builder | ⬜ Pending |
-| 6 | User Portal — Dashboard & Settings | ⬜ Pending |
-| 7 | Public pages — Landing page, shared card view | ⬜ Pending |
-| 8 | QR code generation | ⬜ Pending |
-| 9 | vCard download | ⬜ Pending |
-| 10 | Analytics | ⬜ Pending |
+| 5 | User Portal — Card Builder (create, edit, delete, publish, templates) | ✅ Done |
+| 6 | User Portal — Card Sharing (QR code, shareable URL, print front+back) | ✅ Done |
+| 7 | Public card view (`/u/[slug]`) — click-to-call, email, social links | ✅ Done |
+| 8 | User Portal — Dashboard (stats + recent cards) | ✅ Done |
+| 9 | User Portal — My Cards (search, sort, filter, publish toggle, primary card) | ✅ Done |
+| 10 | User Portal — Analytics (30-day chart, per-card stats) | ✅ Done |
+| 11 | User Portal — Settings (profile, password, delete account) | ⬜ Pending |
+| 12 | Avatar / photo upload (Cloudinary) | ⬜ Pending |
+| 13 | vCard (.vcf) download on public card view | ⬜ Pending |
+| 14 | Public Landing page (`/`) | ⬜ Pending |
 
 ### What's been built
 
@@ -181,6 +185,38 @@ Digital Card New/
 - Admin: `admin@mydigitalcard.app` / `Admin@12345`
 - Demo user: `demo@mydigitalcard.app` / `Demo@12345`
 
+**User Portal — Card Builder** (`/card/new`, `/card/[id]/edit`)
+- Two creation flows: Quick Card (single form) and Full Builder (step-by-step with live preview)
+- `CardPreview` component — 8 layout renderers; null-safe config normalization with `??` fallbacks
+- `SocialLinksEditor` — duplicate platform prevention via `Set` of used platforms; add/remove/reorder
+- URL normalization — auto-prepends `https://` on save if missing
+- Edit page — loads card via `useEffect + fetch`, has delete (confirmation) in header and bottom of form
+- Created card page (`/card/[id]/created`) — shows QR code (canvas), copy link, print both sides (front card + back QR via print HTML), "Embed" placeholder
+- `DeleteCardButton` — reusable component using `router.refresh()` for server-component revalidation
+
+**User Portal — My Cards** (`/card`)
+- `MyCardsGrid` client component — receives `initialCards` from server, manages all state locally (no `router.refresh()`)
+- Search: real-time filter across displayName, jobTitle, company
+- Sort: newest, oldest, name A→Z, name Z→A, most views
+- Filter tabs: All / Published / Draft with live counts
+- Publish toggle: PUT API, local `setCards` state update
+- Delete: inline confirmation, DELETE API, filters card from state
+- Primary card: `PATCH /api/v1/cards/[id]/primary` — transaction clears all `isPrimary`, sets chosen; amber star badge on primary card; "Set as primary" button only on published non-primary cards
+
+**User Portal — Analytics** (`/analytics`)
+- Server component fetches cards + `CardView` events for last 30 days
+- 30-day bucket aggregation: fills all date keys with 0, increments from DB
+- `ViewsChart` — CSS flex bar chart with hover tooltips, 4 date labels; no external charting library
+- 4 StatsCards (total views, total clicks, published cards, total cards) + per-card performance table
+
+**User Portal — Dashboard** (`/dashboard`)
+- Stats row: total cards, published, total views, total clicks
+- Recent Cards: 3 most recent cards; "View all N cards →" links to `/card`
+
+**Public Card View** (`/u/[slug]`)
+- Guest-accessible; records a `CardView` event + increments `CardAnalytics.totalViews` on load
+- Click-to-call (`tel:`), click-to-email (`mailto:`), social links open in new tab
+
 ---
 
 ## Important Notes for Claude
@@ -218,4 +254,19 @@ Digital Card New/
 - Ticket categories: GENERAL, SUGGESTION, COMPLAINT, BUG, BILLING, OTHER
 - Ticket statuses: OPEN, IN_PROGRESS, RESOLVED, CLOSED
 
-*Last updated: 2026-04-17 — Support Tickets complete*
+## Key API Routes
+
+| Method | Route | Description |
+|---|---|---|
+| GET/POST | `/api/v1/cards` | List user's cards / create card |
+| GET/PUT/DELETE | `/api/v1/cards/[id]` | Get / update / delete a card |
+| PATCH | `/api/v1/cards/[id]/primary` | Set card as user's primary (transaction clears all, sets one) |
+| GET/POST | `/api/v1/support/tickets` | User: list own tickets / submit new ticket |
+| GET | `/api/v1/admin/support/tickets` | Admin: list all tickets |
+| GET/PATCH | `/api/v1/admin/support/tickets/[id]` | Admin: get / update ticket status + note |
+| GET/POST | `/api/v1/admin/templates` | Admin: list / create templates |
+| GET/PATCH/DELETE | `/api/v1/admin/templates/[id]` | Admin: get / update / delete template |
+| GET/PATCH/DELETE | `/api/v1/admin/users/[id]` | Admin: get / suspend/activate / delete user |
+| PATCH/DELETE | `/api/v1/admin/cards/[id]` | Admin: publish/unpublish / delete any card |
+
+*Last updated: 2026-04-21 — My Cards search/sort/filter + primary card complete*

@@ -1,10 +1,10 @@
 # Technical Requirements Document (TRD)
 # My Digital Card
 
-**Version:** 1.0  
-**Date:** 2026-04-16  
+**Version:** 1.1  
+**Date:** 2026-04-21  
 **Owner:** Yuvraj Sharma  
-**Status:** Draft
+**Status:** In Development — Phase 1 Web nearly complete
 
 ---
 
@@ -141,27 +141,61 @@ All API logic lives in Next.js API Routes to reduce infrastructure complexity fo
 - Authentication via session cookie
 - Zod validation on all request bodies
 
-### Core Endpoints
+### Core Endpoints (Implemented)
 
 ```
-POST   /api/v1/auth/signup
-POST   /api/v1/auth/login
-POST   /api/v1/auth/logout
-POST   /api/v1/auth/forgot-password
-POST   /api/v1/auth/reset-password
+# Auth (handled by NextAuth)
+POST   /api/auth/signin
+POST   /api/auth/signout
+POST   /api/auth/[...nextauth]        # OAuth callback handler
 
+# Cards (user)
 GET    /api/v1/cards                  # List user's cards
 POST   /api/v1/cards                  # Create card
 GET    /api/v1/cards/:id              # Get card
-PUT    /api/v1/cards/:id              # Update card
+PUT    /api/v1/cards/:id              # Update card (full replace)
 DELETE /api/v1/cards/:id              # Delete card
+PATCH  /api/v1/cards/:id/primary      # Set as primary (transaction: clear all, set one)
 
-GET    /api/v1/public/cards/:username # Public card view (no auth)
+# Templates (user-facing, read-only)
+GET    /api/v1/templates              # List active templates
 
-GET    /api/v1/admin/users            # Admin: list users
-PUT    /api/v1/admin/users/:id        # Admin: update user status
-GET    /api/v1/admin/stats            # Admin: platform statistics
+# Support tickets (user)
+GET    /api/v1/support/tickets        # List own tickets
+POST   /api/v1/support/tickets        # Submit new ticket
+
+# Admin — users
+GET    /api/v1/admin/users            # List all users (paginated, searchable)
+GET    /api/v1/admin/users/:id        # Get user
+PATCH  /api/v1/admin/users/:id        # Suspend / activate user
+DELETE /api/v1/admin/users/:id        # Delete user
+
+# Admin — cards
+GET    /api/v1/admin/cards            # List all cards (paginated, searchable)
+PATCH  /api/v1/admin/cards/:id        # Publish / unpublish card
+DELETE /api/v1/admin/cards/:id        # Delete card
+
+# Admin — templates
+GET    /api/v1/admin/templates        # List all templates
+POST   /api/v1/admin/templates        # Create template
+GET    /api/v1/admin/templates/:id    # Get template
+PATCH  /api/v1/admin/templates/:id    # Update template
+DELETE /api/v1/admin/templates/:id    # Delete template
+
+# Admin — support tickets
+GET    /api/v1/admin/support/tickets          # List all tickets (search, filter, sort)
+GET    /api/v1/admin/support/tickets/:id      # Get ticket detail
+PATCH  /api/v1/admin/support/tickets/:id      # Update status + admin note
+
+# Admin — stats
+GET    /api/v1/admin/stats            # Platform-wide stats (users, cards, views)
 ```
+
+### Key Implementation Notes
+
+- `PATCH /api/v1/cards/:id/primary` uses a Prisma `$transaction` to atomically clear `isPrimary` on all user cards then set it on the target — prevents race conditions leaving two primary cards
+- Public card view is a **Server Component** at `/u/[slug]` — no API route; renders directly from Prisma and records a `CardView` event server-side
+- Analytics aggregation (30-day chart) is done server-side in the analytics page Server Component — raw `CardView` rows bucketed by date, no separate aggregation job needed at current scale
 
 ---
 

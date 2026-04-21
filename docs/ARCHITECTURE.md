@@ -1,10 +1,10 @@
 # Architecture Document
 # My Digital Card
 
-**Version:** 1.2  
-**Date:** 2026-04-16  
+**Version:** 1.3  
+**Date:** 2026-04-21  
 **Owner:** Yuvraj Sharma  
-**Status:** In Development — Admin Portal (incl. Template Management) complete
+**Status:** In Development — Phase 1 Web nearly complete (settings, avatar upload, vCard, landing page pending)
 
 ---
 
@@ -96,29 +96,44 @@ My Digital Card is a full-stack web and mobile application. The web application 
 
 ### 4.1 User Creates a Card
 ```
-User fills Card Builder form
-  → Client validates with Zod
+User fills Card Builder form (quick or full builder)
+  → Client validates with Zod + normalizes URLs (auto-prepends https://)
+  → Duplicate platform check prevents same social platform twice
   → POST /api/v1/cards
   → NextAuth session checked (middleware)
   → Zod validates request body
-  → Prisma creates Card record in PostgreSQL
-  → If photo uploaded → Cloudinary upload → URL saved to Card
-  → Card published → unique URL generated: /u/[username]
-  → Response returned to client
-  → User redirected to dashboard
+  → Prisma creates Card + SocialLink records in PostgreSQL
+  → User redirected to /card/[id]/created
+  → Created page shows QR code (qrcode.react), copy link, print (front+back)
 ```
 
 ### 4.2 Guest Views a Shared Card
 ```
 Guest opens shared URL: mydigitalcard.com/u/john-doe
-  → Next.js Server Component renders page
-  → Prisma queries Card by username (no auth needed)
-  → Page rendered with card data
-  → Analytics event recorded (view count++)
-  → Guest can download vCard (.vcf) or click links
+  → Next.js Server Component at /u/[slug]/page.tsx
+  → Prisma queries Card by slug (no auth needed)
+  → If card not found or not published → 404
+  → Page rendered with card data (layout driven by Card.styles snapshot)
+  → Prisma creates CardView event + increments CardAnalytics.totalViews
+  → Guest can click phone (tel:), email (mailto:), social links (new tab)
+  → vCard download ⬜ pending
 ```
 
-### 4.3 Admin Manages Users
+### 4.3 User Sets a Primary Card
+```
+User clicks "Set as primary" on a published card in My Cards
+  → PATCH /api/v1/cards/:id/primary
+  → Session verified
+  → Card ownership verified (findFirst with userId)
+  → Card must be published (400 if not)
+  → Prisma $transaction:
+      1. updateMany: set isPrimary=false on ALL user cards
+      2. update: set isPrimary=true on target card
+  → Client updates local React state (no page reload)
+  → Amber star badge appears on that card
+```
+
+### 4.4 Admin Manages Users
 ```
 Admin logs in → session has role: ADMIN
   → Navigates to /admin/users
@@ -127,6 +142,19 @@ Admin logs in → session has role: ADMIN
   → Admin can suspend/delete users
   → Actions call /api/v1/admin/users/:id
   → Prisma updates User record
+```
+
+### 4.5 Analytics Aggregation
+```
+User visits /analytics
+  → Server Component fetches:
+      - All user cards (with CardAnalytics for totals)
+      - CardView events from last 30 days for all user cards
+  → Builds date-bucket map: { "2026-03-22": 0, ..., "2026-04-21": 0 }
+  → Increments bucket for each CardView.viewedAt date
+  → Passes 30-entry array to ViewsChart (Client Component)
+  → ViewsChart renders CSS flex bar chart — no external charting library
+  → Per-card table shows views + clicks for each card
 ```
 
 ---
@@ -160,75 +188,97 @@ User visits /login
 apps/web/
 ├── app/
 │   ├── (public)/
-│   │   ├── page.tsx                        # Landing page ⬜
-│   │   └── u/[username]/
-│   │       └── page.tsx                    # Public card view ⬜
+│   │   ├── page.tsx                              # Landing page ⬜
+│   │   └── u/[slug]/
+│   │       └── page.tsx                          # Public card view (Server Component) ✅
 │   ├── (auth)/
-│   │   ├── layout.tsx                      # Centered auth layout ✅
-│   │   ├── login/page.tsx                  # Login page ⬜
-│   │   ├── signup/page.tsx                 # Signup page ⬜
-│   │   ├── forgot-password/page.tsx        # Forgot password ⬜
-│   │   └── reset-password/page.tsx         # Reset password ⬜
+│   │   ├── layout.tsx                            # Split two-panel auth layout ✅
+│   │   ├── login/page.tsx                        # Email + Google OAuth login ✅
+│   │   ├── signup/page.tsx                       # Email signup + verification ✅
+│   │   ├── forgot-password/page.tsx              # Send reset email ✅
+│   │   └── reset-password/page.tsx               # Token-based password reset ✅
 │   ├── (user)/
-│   │   ├── layout.tsx                      # User portal layout ⬜
-│   │   ├── dashboard/page.tsx              # User's cards overview ⬜
+│   │   ├── layout.tsx                            # UserSidebar + UserFooter ✅
+│   │   ├── dashboard/page.tsx                    # Stats + 3 recent cards ✅
 │   │   ├── card/
-│   │   │   ├── new/page.tsx                # Card builder (new) ⬜
-│   │   │   └── [id]/edit/page.tsx          # Card builder (edit) ⬜
-│   │   └── settings/page.tsx               # Account settings ⬜
+│   │   │   ├── page.tsx                          # My Cards (Server Component) ✅
+│   │   │   ├── new/
+│   │   │   │   ├── page.tsx                      # Choose flow (quick vs builder) ✅
+│   │   │   │   ├── quick/page.tsx                # Quick card form ✅
+│   │   │   │   └── builder/page.tsx              # Full builder with live preview ✅
+│   │   │   └── [id]/
+│   │   │       ├── edit/page.tsx                 # Edit card (Client Component) ✅
+│   │   │       └── created/page.tsx              # Post-create: QR, copy link, print ✅
+│   │   ├── analytics/page.tsx                    # 30-day chart + per-card stats ✅
+│   │   ├── support/page.tsx                      # Submit & view support tickets ✅
+│   │   └── settings/page.tsx                     # Profile, password, delete account ⬜
 │   ├── (admin)/
-│   │   ├── layout.tsx                          # Admin layout (SessionProvider) ✅
-│   │   ├── admin/page.tsx                      # Admin dashboard ✅
-│   │   ├── admin/users/page.tsx                # User management ✅
-│   │   ├── admin/cards/page.tsx                # Card management ✅
-│   │   ├── admin/templates/page.tsx            # Template list ✅
-│   │   ├── admin/templates/new/page.tsx        # Create template ✅
-│   │   └── admin/templates/[id]/edit/page.tsx  # Edit template ✅
+│   │   ├── layout.tsx                            # Admin layout (SessionProvider) ✅
+│   │   ├── admin/page.tsx                        # Admin dashboard ✅
+│   │   ├── admin/users/page.tsx                  # User management ✅
+│   │   ├── admin/cards/page.tsx                  # Card management ✅
+│   │   ├── admin/templates/page.tsx              # Template list ✅
+│   │   ├── admin/templates/new/page.tsx          # Create template ✅
+│   │   ├── admin/templates/[id]/edit/page.tsx    # Edit template ✅
+│   │   └── admin/support/page.tsx                # Support ticket management ✅
 │   └── api/
-│       ├── auth/[...nextauth]/route.ts         # NextAuth handler ✅
+│       ├── auth/[...nextauth]/route.ts           # NextAuth handler ✅
 │       └── v1/
-│           ├── cards/route.ts                  # GET, POST cards ✅
-│           ├── cards/[id]/route.ts             # GET, PUT, DELETE card ✅
-│           ├── public/cards/[username]/route.ts # Public card view ✅
-│           ├── templates/route.ts              # GET templates (user-facing) ✅
+│           ├── cards/route.ts                    # GET, POST cards ✅
+│           ├── cards/[id]/route.ts               # GET, PUT, DELETE card ✅
+│           ├── cards/[id]/primary/route.ts       # PATCH — set primary card ✅
+│           ├── templates/route.ts                # GET active templates (user) ✅
+│           ├── support/tickets/route.ts          # GET, POST (user tickets) ✅
 │           └── admin/
-│               ├── stats/route.ts              # Platform stats ✅
-│               ├── users/route.ts              # List users ✅
-│               ├── users/[id]/route.ts         # PATCH, DELETE user ✅
-│               ├── cards/[id]/route.ts         # PATCH, DELETE card ✅
-│               ├── templates/route.ts          # GET, POST templates ✅
-│               └── templates/[id]/route.ts     # GET, PATCH, DELETE template ✅
+│               ├── stats/route.ts                # Platform stats ✅
+│               ├── users/route.ts                # List users ✅
+│               ├── users/[id]/route.ts           # PATCH, DELETE user ✅
+│               ├── cards/[id]/route.ts           # PATCH, DELETE card ✅
+│               ├── templates/route.ts            # GET, POST templates ✅
+│               ├── templates/[id]/route.ts       # GET, PATCH, DELETE template ✅
+│               └── support/
+│                   ├── tickets/route.ts          # GET all tickets (admin) ✅
+│                   └── tickets/[id]/route.ts     # GET, PATCH ticket ✅
 ├── components/
-│   ├── ui/                                     # shadcn/ui: card, button, badge,
-│   │                                           # table, input, select, textarea,
-│   │                                           # switch, dialog, dropdown-menu,
-│   │                                           # avatar, separator, sheet,
-│   │                                           # skeleton, tabs, form, label ✅
-│   ├── admin/                                  # Admin portal components ✅
-│   │   ├── AdminSidebar.tsx                    # Dark sidebar, responsive ✅
-│   │   ├── AdminHeader.tsx                     # Top bar + user dropdown ✅
-│   │   ├── StatsCard.tsx                       # Reusable stat card ✅
-│   │   ├── RecentUsers.tsx                     # Dashboard: recent users list ✅
-│   │   ├── RecentCards.tsx                     # Dashboard: recent cards list ✅
-│   │   ├── UsersTable.tsx                      # Users management table ✅
-│   │   ├── CardsTable.tsx                      # Cards management table ✅
-│   │   ├── TemplatesTable.tsx                  # Templates list + actions ✅
-│   │   ├── TemplateForm.tsx                    # Create/edit template form ✅
-│   │   ├── TemplatePreviewDialog.tsx           # Full preview modal ✅
-│   │   └── CardPreview.tsx                     # 8-layout card renderer, front/back flip ✅
-│   ├── auth/                                   # Auth form components ✅
-│   │   ├── LoginForm.tsx                       # ✅
-│   │   ├── ForgotPasswordForm.tsx              # ✅
-│   │   └── ResetPasswordForm.tsx               # ✅
-│   └── shared/                                 # Shared across portals ⬜
+│   ├── ui/                                       # shadcn/ui primitives ✅
+│   │                                             # button, input, badge, table, select,
+│   │                                             # textarea, switch, dialog, dropdown-menu,
+│   │                                             # avatar, separator, sheet, skeleton,
+│   │                                             # tabs, form, label, tooltip
+│   ├── admin/                                    # Admin portal components ✅
+│   │   ├── AdminSidebar.tsx                      # Dark sidebar, Sheet on mobile ✅
+│   │   ├── AdminHeader.tsx                       # Top bar + user dropdown ✅
+│   │   ├── StatsCard.tsx                         # Reusable stat tile (icon, value, subtitle) ✅
+│   │   ├── RecentUsers.tsx                       # Dashboard: recent users list ✅
+│   │   ├── RecentCards.tsx                       # Dashboard: recent cards list ✅
+│   │   ├── UsersTable.tsx                        # Users management table ✅
+│   │   ├── CardsTable.tsx                        # Cards management table ✅
+│   │   ├── TemplatesTable.tsx                    # Templates list + actions ✅
+│   │   ├── TemplateForm.tsx                      # Create/edit template form ✅
+│   │   ├── TemplatePreviewDialog.tsx             # Full preview modal ✅
+│   │   ├── CardPreview.tsx                       # 8-layout renderer, front/back 3D flip ✅
+│   │   └── SupportTicketsTable.tsx               # Ticket list + TicketDetailDialog ✅
+│   ├── auth/                                     # Auth form components ✅
+│   │   ├── LoginForm.tsx                         # ✅
+│   │   ├── ForgotPasswordForm.tsx                # ✅
+│   │   └── ResetPasswordForm.tsx                 # ✅
+│   └── user/                                     # User portal components ✅
+│       ├── UserSidebar.tsx                       # Light sidebar, Sheet on mobile ✅
+│       ├── UserHeader.tsx                        # Page title + user dropdown (supports children) ✅
+│       ├── DeleteCardButton.tsx                  # Trash icon → confirm → DELETE + router.refresh() ✅
+│       ├── MyCardsGrid.tsx                       # Client grid: search/sort/filter, toggle, delete, primary ✅
+│       ├── ViewsChart.tsx                        # CSS flex bar chart, hover tooltips, no lib ✅
+│       ├── SupportPageClient.tsx                 # Submit ticket + view own tickets ✅
+│       └── card/
+│           └── SocialLinksEditor.tsx             # Add/remove social links, duplicate prevention ✅
 └── lib/
-    ├── auth.ts                                 # NextAuth config ✅
-    ├── prisma.ts                               # Prisma client singleton ✅
-    ├── cloudinary.ts                           # Cloudinary config ✅
-    ├── email.ts                                # Resend email helpers ✅
-    ├── types/template.ts                       # TemplateConfig type, layout/font options ✅
-    ├── actions/auth.ts                         # Server actions (login, signup, etc.) ✅
-    └── validations/                            # Zod schemas ✅
+    ├── auth.ts                                   # NextAuth config ✅
+    ├── prisma.ts                                 # Prisma client singleton ✅
+    ├── cloudinary.ts                             # Cloudinary config ✅
+    ├── email.ts                                  # Resend email helpers ✅
+    ├── types/template.ts                         # TemplateConfig type, layout/font options ✅
+    ├── actions/auth.ts                           # Server actions (login, signup, etc.) ✅
+    └── validations/                              # Zod schemas (auth, card) ✅
 ```
 
 ---
@@ -259,14 +309,23 @@ Mobile calls the **same API** as the web app — no separate backend needed.
 
 ## 8. Local Development Setup
 
-```
-docker-compose up -d     # Start PostgreSQL + Redis
-npm run dev              # Start Next.js dev server
+```bash
+# Build and start all services
+docker compose build web
+docker compose up -d
+
+# Schema changes — rebuild migrate container then restart
+docker compose build migrate
+docker compose up -d migrate web
 ```
 
 Docker Compose services:
-- `postgres` — PostgreSQL 15 on port 5432
-- `redis` — Redis 7 on port 6379
+- `postgres` (`mdc_postgres`) — PostgreSQL 15 on port 5432
+- `redis` (`mdc_redis`) — Redis 7 on port 6379
+- `migrate` (`mdc_migrate`) — runs `prisma db push` + seed on startup, then exits
+- `web` (`mdc_web`) — Next.js app on port 3000
+
+Schema management uses `prisma db push` (not `prisma migrate dev`) — no migration files are tracked. The migrate container runs on every `docker compose up` and applies any schema drift.
 
 ---
 

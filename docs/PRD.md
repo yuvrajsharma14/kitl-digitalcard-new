@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD)
 # My Digital Card
 
-**Version:** 1.2  
-**Date:** 2026-04-16  
+**Version:** 1.3  
+**Date:** 2026-04-21  
 **Owner:** Yuvraj Sharma  
 **Status:** In Development — Phase 1 (Web)
 
@@ -65,58 +65,70 @@ My Digital Card is a free web and hybrid mobile application for creating, managi
 
 ---
 
-### 4.3 Digital Card Builder (User Portal) ⬜
+### 4.3 Digital Card Builder (User Portal) ✅
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | Create a new digital card | Must Have | ⬜ |
-| 2 | Add name, job title, company, bio | Must Have | ⬜ |
-| 3 | Add profile photo | Must Have | ⬜ |
-| 4 | Add contact info (phone, email, website) | Must Have | ⬜ |
-| 5 | Add social links (LinkedIn, Twitter, Instagram, etc.) | Must Have | ⬜ |
-| 6 | Choose from card templates | Should Have | ⬜ |
-| 7 | Customize card colors / theme | Should Have | ⬜ |
-| 8 | Preview card before publishing | Must Have | ⬜ |
-| 9 | Publish / unpublish card | Must Have | ⬜ |
-| 10 | Edit existing card | Must Have | ⬜ |
-| 11 | Multiple cards per user | Should Have | ⬜ |
+| 1 | Create a new digital card (quick flow + full builder) | Must Have | ✅ |
+| 2 | Add name, job title, company, bio | Must Have | ✅ |
+| 3 | Add profile photo | Must Have | ⬜ (field exists, Cloudinary upload UI pending) |
+| 4 | Add contact info (phone, email, website) | Must Have | ✅ |
+| 5 | Add social links (LinkedIn, Twitter, Instagram, etc.) | Must Have | ✅ |
+| 6 | Choose from card templates | Should Have | ✅ |
+| 7 | Customize card colors / theme | Should Have | ✅ |
+| 8 | Preview card before publishing | Must Have | ✅ |
+| 9 | Publish / unpublish card | Must Have | ✅ |
+| 10 | Edit existing card | Must Have | ✅ |
+| 11 | Multiple cards per user | Should Have | ✅ |
+| 12 | Delete card (with confirmation) | Must Have | ✅ |
+| 13 | Duplicate platform prevention on social links | Must Have | ✅ |
 
 ---
 
-### 4.4 Card Sharing ⬜
+### 4.4 Card Sharing ✅
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | Unique shareable URL per card (e.g., mydigitalcard.com/u/username) | Must Have | ⬜ |
-| 2 | QR code generation for each card | Must Have | ⬜ |
-| 3 | Download QR code as PNG | Should Have | ⬜ |
-| 4 | Copy link to clipboard | Must Have | ⬜ |
+| 1 | Unique shareable URL per card (`/u/[slug]`) | Must Have | ✅ |
+| 2 | QR code generation for each card | Must Have | ✅ |
+| 3 | Print card — front (card) + back (QR code) | Should Have | ✅ |
+| 4 | Copy link to clipboard | Must Have | ✅ |
 | 5 | Share via native share (mobile) | Should Have | ⬜ |
-| 6 | NFC tap-to-share (mobile Phase 2) | Nice to Have | ⬜ |
+| 6 | Download QR code as PNG | Should Have | ⬜ |
+| 7 | Embed on website (`<iframe>` snippet) | Nice to Have | ⬜ |
+| 8 | NFC tap-to-share (mobile Phase 2) | Nice to Have | ⬜ |
 
 ---
 
-### 4.5 Public Card View (Guest Access) ⬜
+### 4.5 Public Card View (Guest Access) 🔄
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | View shared card without login | Must Have | ⬜ |
-| 2 | Save contact as vCard (.vcf) download | Must Have | ⬜ |
-| 3 | Click-to-call / click-to-email | Must Have | ⬜ |
-| 4 | Social links open in browser | Must Have | ⬜ |
-| 5 | Mobile-optimized card view | Must Have | ⬜ |
+| 1 | View shared card without login | Must Have | ✅ |
+| 2 | Click-to-call / click-to-email | Must Have | ✅ |
+| 3 | Social links open in browser | Must Have | ✅ |
+| 4 | Mobile-optimized card view | Must Have | ✅ |
+| 5 | Save contact as vCard (.vcf) download | Must Have | ⬜ |
 
 ---
 
-### 4.6 User Dashboard ⬜
+### 4.6 User Dashboard & My Cards ✅
 
 | # | Feature | Priority | Status |
 |---|---|---|---|
-| 1 | View all created cards | Must Have | ⬜ |
-| 2 | Card analytics — total views, link clicks | Should Have | ⬜ |
-| 3 | Manage profile settings | Must Have | ⬜ |
-| 4 | Change password | Must Have | ⬜ |
-| 5 | Delete account | Must Have | ⬜ |
+| 1 | Dashboard — stats (total cards, published, views, clicks) | Must Have | ✅ |
+| 2 | Dashboard — recent cards (3 most recent) with "View all" link | Must Have | ✅ |
+| 3 | My Cards page — full grid of all cards | Must Have | ✅ |
+| 4 | My Cards — search by name, job title, company | Should Have | ✅ |
+| 5 | My Cards — sort (newest, oldest, name, most views) | Should Have | ✅ |
+| 6 | My Cards — filter by status (all / published / draft) | Should Have | ✅ |
+| 7 | My Cards — publish/unpublish toggle (inline, no reload) | Must Have | ✅ |
+| 8 | My Cards — delete card with confirmation | Must Have | ✅ |
+| 9 | My Cards — set primary card (published cards only) | Should Have | ✅ |
+| 10 | Analytics page — 30-day views chart + per-card stats table | Should Have | ✅ |
+| 11 | Settings page | Must Have | ⬜ |
+| 12 | Change password | Must Have | ⬜ |
+| 13 | Delete account | Must Have | ⬜ |
 
 ---
 
@@ -205,9 +217,17 @@ Templates define the visual appearance of a digital business card. Admins create
 - ✅ Authentication (login, Google OAuth, forgot/reset password, email verification)
 - ✅ Admin portal — dashboard, user management, card management
 - ✅ Admin portal — card template management (8 layouts, live preview, front/back flip)
-- ⬜ Card builder + sharing (QR code, link, vCard)
-- ⬜ User dashboard & settings
-- ⬜ Public landing page
+- ✅ Support tickets — user submit + admin manage (search, filter, respond)
+- ✅ Card builder — create (quick + full builder), edit, delete, publish/unpublish
+- ✅ Card sharing — shareable URL, QR code, print (front + back), copy link
+- ✅ Public card view (`/u/[slug]`) — click-to-call, click-to-email, social links
+- ✅ User dashboard — stats, recent cards
+- ✅ My Cards page — search, sort, filter, publish toggle, delete, primary card
+- ✅ Analytics page — 30-day views chart, per-card stats
+- ⬜ Settings page (profile edit, change password, delete account)
+- ⬜ Avatar / photo upload (Cloudinary)
+- ⬜ vCard (.vcf) download on public card view
+- ⬜ Public landing page (`/`)
 
 ### Phase 2 — Mobile
 - React Native + Expo app

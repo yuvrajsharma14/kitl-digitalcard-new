@@ -1,8 +1,8 @@
 # Database Design Document
 # My Digital Card
 
-**Version:** 1.0  
-**Date:** 2026-04-16  
+**Version:** 1.1  
+**Date:** 2026-04-21  
 **Owner:** Yuvraj Sharma  
 **Status:** Draft
 
@@ -46,6 +46,7 @@ Primary database is **PostgreSQL 15** managed via **Prisma ORM**. The schema is 
 └─────────────────┘         │ avatarUrl            │
                             │ styles (JSON)        │ ← snapshot of template config at pick-time
                             │ isPublished          │
+                            │ isPrimary            │ ← user's designated primary card
                             │ createdAt            │
                             │ updatedAt            │
                             └──────────┬───────────┘
@@ -108,6 +109,7 @@ A user's digital business card. One user can have multiple cards.
 | avatarUrl | String | Nullable | Card profile photo (Cloudinary) |
 | styles | JSON | Nullable | Snapshot of template config at pick-time: `{ layout, backgroundColor, textColor, accentColor, fontFamily }` |
 | isPublished | Boolean | Default: false | Is card publicly accessible |
+| isPrimary | Boolean | Default: false | User's designated primary card — only one card per user can be true at a time |
 | createdAt | DateTime | Default: now() | Creation time |
 | updatedAt | DateTime | Auto-updated | Last update time |
 
@@ -371,6 +373,7 @@ model Card {
   avatarUrl   String?
   styles      Json?    // snapshot of template config: { layout, backgroundColor, textColor, accentColor, fontFamily }
   isPublished Boolean  @default(false)
+  isPrimary   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

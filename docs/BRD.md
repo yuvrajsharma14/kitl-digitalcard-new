@@ -1,10 +1,10 @@
 # Business Requirements Document (BRD)
 # My Digital Card
 
-**Version:** 1.0  
-**Date:** 2026-04-16  
+**Version:** 1.1  
+**Date:** 2026-04-21  
 **Owner:** Yuvraj Sharma  
-**Status:** Draft
+**Status:** In Development — Phase 1 Web nearly complete
 
 ---
 
@@ -58,12 +58,20 @@ Professionals today still rely on physical business cards which are:
 
 ## 6. Key Features (Business Level)
 
-- Create a personalized digital business card
-- Share card via QR Code, link, or NFC tap
-- Save received cards as contacts (vCard / .vcf)
-- View basic analytics (profile views, link clicks)
-- Admin portal for platform management
-- Mobile app (hybrid) for on-the-go access
+| Feature | Status |
+|---|---|
+| Create a personalized digital business card (name, photo, contact info, social links) | ✅ Built |
+| Choose from visual card templates (8 layouts, customizable colors/fonts) | ✅ Built |
+| Share card via unique URL and QR code | ✅ Built |
+| Print card — front (design) + back (QR code) | ✅ Built |
+| Multiple cards per user with publish/unpublish control | ✅ Built |
+| Designate a primary card | ✅ Built |
+| View basic analytics (profile views, link clicks, 30-day chart) | ✅ Built |
+| Admin portal — platform management, user management, template management | ✅ Built |
+| Support ticket system (user submit + admin respond) | ✅ Built |
+| Save received cards as contacts (vCard / .vcf download) | ⬜ Pending |
+| Mobile app (hybrid) for on-the-go access | ⬜ Phase 2 |
+| NFC tap-to-share | ⬜ Phase 2 |
 
 ---
 
