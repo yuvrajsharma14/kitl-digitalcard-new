@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UserHeader } from "@/components/user/UserHeader";
 import { StatsCard } from "@/components/admin/StatsCard";
+import { CardPreviewTile } from "@/components/user/CardPreviewTile";
 import {
   CreditCard, Eye, MousePointerClick, Share2,
   PlusCircle, Pencil, Globe, Lock, ChevronRight,
@@ -14,15 +15,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeleteCardButton } from "@/components/user/DeleteCardButton";
+import type { TemplateConfig } from "@/lib/types/template";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 async function getDashboardData(userId: string) {
-  const cards = await prisma.card.findMany({
-    where:   { userId },
-    include: { analytics: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [rawCards, user] = await Promise.all([
+    prisma.card.findMany({
+      where:   { userId },
+      include: { analytics: true, socialLinks: { orderBy: { order: "asc" } } },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { avatarUrl: true } }),
+  ]);
+
+  // Fall back to the user's profile photo if a card has no dedicated avatar
+  const cards = rawCards.map((c) => ({
+    ...c,
+    avatarUrl: c.avatarUrl ?? user?.avatarUrl ?? null,
+  }));
 
   const totalCards     = cards.length;
   const publishedCards = cards.filter((c) => c.isPublished).length;
@@ -42,6 +53,7 @@ function greeting(name: string) {
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "ADMIN") redirect("/admin");
 
   const { cards, totalCards, publishedCards, totalViews, totalClicks } =
     await getDashboardData(session.user.id);
@@ -132,49 +144,60 @@ export default async function DashboardPage() {
               {/* Show only 3 most recent cards */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {cards.slice(0, 3).map((card) => {
-                  const accent = (card.styles as { accentColor?: string } | null)?.accentColor ?? "#6366f1";
-                  const bg     = (card.styles as { backgroundColor?: string } | null)?.backgroundColor ?? "#ffffff";
                   const views  = card.analytics?.totalViews  ?? 0;
                   const clicks = card.analytics?.totalClicks ?? 0;
+
+                  const config = (card.styles ?? {}) as unknown as TemplateConfig;
 
                   return (
                     <div key={card.id}
                       className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                      <div className="h-20 relative"
-                        style={{ background: `linear-gradient(135deg, ${accent}22, ${bg})` }}>
-                        <div className="absolute top-3 right-3">
+
+                      {/* ── Actual card preview ── */}
+                      <CardPreviewTile
+                        config={config}
+                        displayName={card.displayName}
+                        jobTitle={card.jobTitle}
+                        company={card.company}
+                        avatarUrl={card.avatarUrl}
+                        email={card.email}
+                        phone={card.phone}
+                        website={card.website}
+                        socialLinks={card.socialLinks}
+                        slug={card.slug}
+                      />
+
+                      {/* ── Status + stats + actions ── */}
+                      <div className="px-4 pt-3 pb-4 flex flex-col flex-1 border-t border-gray-100">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{card.displayName}</p>
                           <Badge
-                            className={card.isPublished
+                            className={`shrink-0 ${card.isPublished
                               ? "bg-green-100 text-green-700 hover:bg-green-100"
-                              : "bg-gray-100 text-gray-500 hover:bg-gray-100"}>
+                              : "bg-gray-100 text-gray-500 hover:bg-gray-100"}`}>
                             {card.isPublished
                               ? <><Globe className="mr-1 h-3 w-3 inline" />Published</>
                               : <><Lock className="mr-1 h-3 w-3 inline" />Draft</>}
                           </Badge>
                         </div>
-                        <div className="absolute bottom-0 left-0 w-full h-8"
-                          style={{ background: "linear-gradient(to top, rgba(255,255,255,0.95), transparent)" }} />
-                      </div>
 
-                      <div className="px-5 pt-3 pb-4 flex flex-col flex-1">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{card.displayName}</p>
-                          {card.jobTitle && (
-                            <p className="text-xs text-gray-500 truncate mt-0.5">{card.jobTitle}
-                              {card.company && <span className="text-gray-400"> · {card.company}</span>}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 mt-3">
-                            <span className="flex items-center gap-1 text-xs text-gray-400">
-                              <Eye className="h-3.5 w-3.5" /> {views.toLocaleString()} views
-                            </span>
-                            <span className="flex items-center gap-1 text-xs text-gray-400">
-                              <MousePointerClick className="h-3.5 w-3.5" /> {clicks.toLocaleString()} clicks
-                            </span>
-                          </div>
+                        {card.jobTitle && (
+                          <p className="text-xs text-gray-500 truncate mb-2">
+                            {card.jobTitle}
+                            {card.company && <span className="text-gray-400"> · {card.company}</span>}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-4 mb-3">
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Eye className="h-3.5 w-3.5" /> {views.toLocaleString()} views
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <MousePointerClick className="h-3.5 w-3.5" /> {clicks.toLocaleString()} clicks
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100 mt-auto">
                           <Button asChild variant="outline" size="sm" className="flex-1 h-8 text-xs">
                             <Link href={`/card/${card.id}/edit`}>
                               <Pencil className="mr-1.5 h-3 w-3" /> Edit

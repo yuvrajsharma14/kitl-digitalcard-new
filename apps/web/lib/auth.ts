@@ -42,7 +42,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.avatarUrl,
+          // Do NOT put avatarUrl in the JWT — base64 images make the cookie
+          // enormous and cause HTTP 431. Load avatar from DB per-request instead.
+          image: null,
           role: user.role,
         };
       },

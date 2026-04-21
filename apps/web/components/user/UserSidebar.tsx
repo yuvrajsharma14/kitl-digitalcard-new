@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   CreditCard,
@@ -28,6 +28,12 @@ const NAV_ITEMS = [
   { href: "/settings",   label: "Settings",   icon: Settings,        exact: false },
 ];
 
+type SessionUser = {
+  name:  string | null;
+  email: string | null;
+  image: string | null;
+};
+
 function NavItem({
   href, label, icon: Icon, exact, onClick,
 }: { href: string; label: string; icon: React.ElementType; exact: boolean; onClick?: () => void }) {
@@ -51,10 +57,9 @@ function NavItem({
   );
 }
 
-function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
-  const { data: session } = useSession();
-  const initials = session?.user?.name
-    ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+function SidebarContent({ user, onNavClick }: { user: SessionUser; onNavClick?: () => void }) {
+  const initials = user.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   return (
@@ -85,14 +90,14 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       <div className="px-3 py-4 space-y-1">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
           <Avatar className="h-8 w-8 shrink-0">
-            <AvatarImage src={session?.user?.image ?? ""} alt={session?.user?.name ?? ""} />
+            <AvatarImage src={user.image ?? ""} alt={user.name ?? ""} />
             <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name}</p>
-            <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+            <p className="text-xs text-gray-400 truncate">{user.email}</p>
           </div>
         </div>
         <button
@@ -107,14 +112,14 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   );
 }
 
-export function UserSidebar() {
+export function UserSidebar({ user }: { user: SessionUser }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {/* Desktop */}
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 lg:block">
-        <SidebarContent />
+        <SidebarContent user={user} />
       </aside>
 
       {/* Mobile trigger */}
@@ -126,7 +131,7 @@ export function UserSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-60 p-0 border-0">
-            <SidebarContent onNavClick={() => setOpen(false)} />
+            <SidebarContent user={user} onNavClick={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
       </div>

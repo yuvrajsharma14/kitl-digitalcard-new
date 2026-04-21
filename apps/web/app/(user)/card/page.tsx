@@ -16,11 +16,14 @@ export default async function MyCardsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cards = await prisma.card.findMany({
-    where:   { userId: session.user.id },
-    include: { analytics: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [cards, user] = await Promise.all([
+    prisma.card.findMany({
+      where:   { userId: session.user.id },
+      include: { analytics: true, socialLinks: { orderBy: { order: "asc" } } },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } }),
+  ]);
 
   // Serialise dates so they can be passed to the client component
   const serialised = cards.map((c) => ({
@@ -29,6 +32,11 @@ export default async function MyCardsPage() {
     displayName: c.displayName,
     jobTitle:    c.jobTitle,
     company:     c.company,
+    avatarUrl:   c.avatarUrl ?? user?.avatarUrl ?? null,
+    email:       c.email,
+    phone:       c.phone,
+    website:     c.website,
+    socialLinks: c.socialLinks.map((s) => ({ platform: s.platform, url: s.url })),
     isPublished: c.isPublished,
     isPrimary:   c.isPrimary,
     updatedAt:   c.updatedAt.toISOString(),

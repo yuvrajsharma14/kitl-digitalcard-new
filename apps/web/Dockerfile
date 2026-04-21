@@ -78,6 +78,8 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Increase header size limit to prevent HTTP 431 errors from large cookies/JWT tokens
+ENV NODE_OPTIONS="--max-http-header-size=131072"
 
 # server.js is at apps/web/server.js due to outputFileTracingRoot
 CMD ["node", "apps/web/server.js"]

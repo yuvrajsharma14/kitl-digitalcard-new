@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useSession } from "next-auth/react";
 import { Camera, Loader2, Trash2, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ export function ProfileSection({
   createdAt,
   oauthProviders,
 }: Props) {
-  const { update } = useSession();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName]             = useState(initialName);
@@ -103,7 +101,6 @@ export function ProfileSection({
       setAvatarBase64(null);
       setRemoveAvatar(false);
       setSuccess(true);
-      await update({ name: data.name, image: data.avatarUrl });
       setTimeout(() => setSuccess(false), 4000);
     } finally {
       setSaving(false);

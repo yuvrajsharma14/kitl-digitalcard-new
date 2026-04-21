@@ -11,8 +11,12 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { CardPreviewTile } from "@/components/user/CardPreviewTile";
+import type { TemplateConfig } from "@/lib/types/template";
 
 interface CardAnalytics { totalViews: number; totalClicks: number }
+
+interface SocialLinkItem { platform: string; url: string }
 
 interface Card {
   id:          string;
@@ -20,6 +24,11 @@ interface Card {
   displayName: string;
   jobTitle:    string | null;
   company:     string | null;
+  avatarUrl:   string | null;
+  email:       string | null;
+  phone:       string | null;
+  website:     string | null;
+  socialLinks: SocialLinkItem[];
   isPublished: boolean;
   isPrimary:   boolean;
   updatedAt:   string;
@@ -219,8 +228,7 @@ export function MyCardsGrid({ initialCards }: { initialCards: Card[] }) {
 
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {visibleCards.map((card) => {
-        const accent  = (card.styles as { accentColor?: string } | null)?.accentColor ?? "#6366f1";
-        const bg      = (card.styles as { backgroundColor?: string } | null)?.backgroundColor ?? "#ffffff";
+        const config  = (card.styles ?? {}) as unknown as TemplateConfig;
         const views   = card.analytics?.totalViews  ?? 0;
         const clicks  = card.analytics?.totalClicks ?? 0;
         const isDelConfirm    = confirmDel    === card.id;
@@ -233,16 +241,26 @@ export function MyCardsGrid({ initialCards }: { initialCards: Card[] }) {
             key={card.id}
             className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow"
           >
-            {/* Colour strip */}
-            <div
-              className="h-20 relative"
-              style={{ background: `linear-gradient(135deg, ${accent}22, ${bg})` }}
-            >
+            {/* Card preview */}
+            <div className="relative">
+              <CardPreviewTile
+                config={config}
+                displayName={card.displayName}
+                jobTitle={card.jobTitle}
+                company={card.company}
+                avatarUrl={card.avatarUrl}
+                email={card.email}
+                phone={card.phone}
+                website={card.website}
+                socialLinks={card.socialLinks}
+                slug={card.slug}
+              />
+
               {/* Publish toggle */}
               <button
                 onClick={() => togglePublish(card)}
                 disabled={isToggling}
-                className={`absolute top-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all shadow-sm ${
+                className={`absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all shadow-sm ${
                   card.isPublished
                     ? "bg-green-100 text-green-700 hover:bg-green-200"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -260,13 +278,10 @@ export function MyCardsGrid({ initialCards }: { initialCards: Card[] }) {
 
               {/* Primary badge */}
               {card.isPrimary && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 shadow-sm">
+                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 shadow-sm">
                   <Star className="h-3 w-3 fill-amber-500 text-amber-500" /> Primary
                 </div>
               )}
-
-              <div className="absolute bottom-0 left-0 w-full h-8"
-                style={{ background: "linear-gradient(to top, rgba(255,255,255,0.95), transparent)" }} />
             </div>
 
             {/* Card info */}

@@ -1,3 +1,5 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { SessionProvider } from "next-auth/react";
 import { UserSidebar } from "@/components/user/UserSidebar";
 
@@ -19,11 +21,23 @@ function UserFooter() {
   );
 }
 
-export default function UserLayout({ children }: { children: React.ReactNode }) {
+export default async function UserLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const user = {
+    name:  session.user.name  ?? null,
+    email: session.user.email ?? null,
+    image: session.user.image ?? null,
+  };
+
+  // Pass the pre-fetched session into SessionProvider so useSession() reads
+  // from context instead of making a client-side /api/auth/session request.
+  // This prevents HTTP 431 from large cookie headers.
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <div className="flex h-full overflow-hidden bg-gray-50">
-        <UserSidebar />
+        <UserSidebar user={user} />
         <div className="flex flex-1 flex-col overflow-hidden">
           {children}
           <UserFooter />

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { loginAction } from "@/lib/actions/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -16,7 +17,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
@@ -36,31 +36,19 @@ export function LoginForm() {
   async function onSubmit(data: LoginInput) {
     setError("");
     startTransition(async () => {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
+      // loginAction calls signIn with redirectTo — on success Next.js throws
+      // NEXT_REDIRECT which is intercepted and becomes a real browser navigation.
+      // On failure it returns { error } which we show below.
+      const result = await loginAction({
+        email:       data.email,
+        password:    data.password,
+        callbackUrl: callbackUrl ?? undefined,
       });
 
       if (result?.error) {
-        setError("Invalid email or password.");
-        return;
+        setError(result.error);
       }
-
-      // Fetch session to determine role and redirect accordingly
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      const role = session?.user?.role;
-
-      if (callbackUrl) {
-        router.push(callbackUrl);
-      } else if (role === "ADMIN") {
-        router.push("/admin");
-      } else {
-        router.push("/dashboard");
-      }
-
-      router.refresh();
+      // No navigation needed here — successful login redirects via server action
     });
   }
 

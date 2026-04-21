@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { UserHeader } from "@/components/user/UserHeader";
 import { ProfileSection } from "@/components/user/ProfileSection";
 import { PasswordSection } from "@/components/user/PasswordSection";
-import { KeyRound, User } from "lucide-react";
+import { DeleteAccountSection } from "@/components/user/DeleteAccountSection";
+import { KeyRound, User, TriangleAlert } from "lucide-react";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -44,7 +45,7 @@ export default async function SettingsPage() {
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl space-y-6">
 
-          {/* Profile section */}
+          {/* Profile */}
           <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50">
@@ -67,7 +68,7 @@ export default async function SettingsPage() {
             </div>
           </section>
 
-          {/* Password section — only for credential users */}
+          {/* Password — credential users only */}
           {hasPassword && (
             <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
@@ -108,6 +109,22 @@ export default async function SettingsPage() {
               </div>
             </section>
           )}
+
+          {/* Danger zone — delete account */}
+          <section className="rounded-2xl border border-red-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-red-100 bg-red-50/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
+                <TriangleAlert className="h-4 w-4 text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-red-700">Danger Zone</p>
+                <p className="text-xs text-red-400">Irreversible actions</p>
+              </div>
+            </div>
+            <div className="px-6 py-6">
+              <DeleteAccountSection />
+            </div>
+          </section>
 
         </div>
       </main>
