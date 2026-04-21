@@ -9,12 +9,22 @@ interface RouteContext {
 export async function GET(req: NextRequest, { params }: RouteContext) {
   const card = await prisma.card.findFirst({
     where: { slug: params.username, isPublished: true },
-    include: { socialLinks: { orderBy: { order: "asc" } } },
+    include: {
+      socialLinks: { orderBy: { order: "asc" } },
+      user:        { select: { avatarUrl: true } },
+    },
   });
 
   if (!card) {
     return NextResponse.json({ error: "Card not found" }, { status: 404 });
   }
+
+  // Fall back to the user's profile photo if the card has no dedicated avatar
+  const { user, ...cardData } = card;
+  const resolvedCard = {
+    ...cardData,
+    avatarUrl: cardData.avatarUrl ?? user?.avatarUrl ?? null,
+  };
 
   // Record view (fire-and-forget)
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? undefined;
@@ -31,5 +41,5 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     )
     .catch(() => null);
 
-  return NextResponse.json({ card });
+  return NextResponse.json({ card: resolvedCard });
 }

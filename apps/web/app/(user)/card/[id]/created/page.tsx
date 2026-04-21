@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { CardPreview } from "@/components/admin/CardPreview";
 import { DEFAULT_TEMPLATE_CONFIG } from "@/lib/types/template";
-import type { TemplateConfig } from "@/lib/types/template";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,9 +113,7 @@ export default function CardCreatedPage() {
   const [copied,      setCopied]      = useState(false);
   const [pdfLoading,  setPdfLoading]  = useState(false);
 
-  const qrRef      = useRef<HTMLDivElement>(null);
-  const cardFront  = useRef<HTMLDivElement>(null);
-  const cardBack   = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   // ── Fetch card ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -203,68 +200,295 @@ export default function CardCreatedPage() {
     URL.revokeObjectURL(url);
   }
 
-  // ── Print card (front only via CSS print) ─────────────────────────────────
+  // ── Print card (front + back — generates clean 2-page print HTML) ────────────
   function printCard() {
-    const front = cardFront.current;
-    if (!front) return;
-    const html = `<!DOCTYPE html><html><head><title>${card?.displayName ?? "Card"}</title>
+    if (!card) return;
+    const accent = config.accentColor ?? "#2563eb";
+    const bg     = config.backgroundColor ?? "#f8fafc";
+    const text   = config.textColor ?? "#0f172a";
+
+    // Front body rows
+    const rows = [
+      card.jobTitle ? `<p style="color:${accent};font-size:13px;margin:2px 0">${card.jobTitle}</p>` : "",
+      card.company  ? `<p style="opacity:.65;font-size:12px;margin:2px 0">${card.company}</p>`      : "",
+      card.email    ? `<p style="font-size:12px;margin:6px 0 2px">✉ ${card.email}</p>`             : "",
+      card.phone    ? `<p style="font-size:12px;margin:2px 0">✆ ${card.phone}</p>`                 : "",
+      card.website  ? `<p style="font-size:12px;margin:2px 0">⊕ ${card.website}</p>`              : "",
+    ].filter(Boolean).join("");
+
+    const avatar = card.avatarUrl
+      ? `<img src="${card.avatarUrl}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:10px;border:3px solid ${accent}" />`
+      : "";
+
+    // QR code data URL from the hidden canvas
+    const qrCanvas = qrRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
+    const qrSrc    = qrCanvas ? qrCanvas.toDataURL("image/png") : "";
+    const qrImg    = qrSrc
+      ? `<img src="${qrSrc}" style="width:180px;height:180px;display:block;margin:0 auto 12px" />`
+      : "";
+
+    const backInfo = [
+      card.displayName ? `<h2 style="font-size:18px;font-weight:bold;color:${text};margin:0 0 4px">${card.displayName}</h2>` : "",
+      card.jobTitle    ? `<p style="font-size:13px;color:${accent};margin:0 0 2px">${card.jobTitle}</p>` : "",
+      card.company     ? `<p style="font-size:12px;color:${text};opacity:.7;margin:0">${card.company}</p>` : "",
+    ].filter(Boolean).join("");
+
+    const html = `<!DOCTYPE html><html><head><title>${card.displayName}</title>
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f3f4f6; }
-      </style></head><body>${front.innerHTML}</body></html>`;
-    const w = window.open("", "_blank", "width=600,height=500");
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:sans-serif; background:#f3f4f6; }
+        .page { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        @media print { .page { page-break-after: always; min-height:100vh; } }
+        .card { background:${bg}; color:${text}; width:340px; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.15); }
+        .band { background:${accent}; padding:20px 20px 14px; text-align:center; color:#fff; }
+        .body { padding:18px 20px; }
+        .back-body { padding:24px 20px; text-align:center; }
+        .scan-label { font-size:10px; letter-spacing:.12em; color:#aaa; margin-bottom:16px; }
+        .divider { width:40px; height:2px; background:${accent}; margin:12px auto; border-radius:1px; }
+        .watermark { font-size:10px; color:#bbb; margin-top:14px; }
+      </style></head>
+      <body>
+        <!-- FRONT -->
+        <div class="page">
+          <div class="card">
+            <div class="band">${avatar}<h2 style="font-size:17px">${card.displayName}</h2></div>
+            <div class="body">${rows}</div>
+          </div>
+        </div>
+        <!-- BACK -->
+        <div class="page">
+          <div class="card">
+            <div class="back-body">
+              <p class="scan-label">SCAN TO CONNECT</p>
+              ${qrImg}
+              <div class="divider"></div>
+              ${backInfo}
+              <p class="watermark">mydigitalcard.app</p>
+            </div>
+          </div>
+        </div>
+      </body></html>`;
+
+    const w = window.open("", "_blank", "width=460,height=600");
     if (!w) return;
     w.document.write(html);
     w.document.close();
     w.focus();
-    setTimeout(() => { w.print(); w.close(); }, 500);
+    setTimeout(() => { w.print(); w.close(); }, 600);
   }
 
-  // ── Download PDF (front + back as two pages) ───────────────────────────────
+  // ── Download PDF (front + back — drawn directly with jsPDF, no html2canvas) ─
   async function downloadPdf() {
-    if (!card || !cardFront.current || !cardBack.current) return;
+    if (!card) return;
     setPdfLoading(true);
     try {
-      const [html2canvas, { jsPDF }] = await Promise.all([
-        import("html2canvas").then((m) => m.default),
-        import("jspdf"),
-      ]);
+      const { jsPDF } = await import("jspdf");
 
-      // Capture front
-      const frontCanvas = await html2canvas(cardFront.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
+      // ── Colour helpers ────────────────────────────────────────────────────────
+      const rgb = (hex: string): [number, number, number] => {
+        const h = (hex ?? "#000000").replace("#", "").padEnd(6, "0");
+        return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+      };
+      const luma = (r: number, g: number, b: number) => (0.299*r + 0.587*g + 0.114*b) / 255;
+
+      const [aR,aG,aB] = rgb(config.accentColor      ?? "#2563eb");
+      const [bR,bG,bB] = rgb(config.backgroundColor  ?? "#f8fafc");
+      const [tR,tG,tB] = rgb(config.textColor         ?? "#0f172a");
+      const onA: [number,number,number] = luma(aR,aG,aB) > 0.55 ? [17,17,17] : [255,255,255];
+
+      // ── Load avatar ───────────────────────────────────────────────────────────
+      let avatarImg: string | null = null;
+      if (card.avatarUrl) {
+        if (card.avatarUrl.startsWith("data:")) {
+          avatarImg = card.avatarUrl;
+        } else {
+          try {
+            const resp = await fetch(card.avatarUrl);
+            const blob = await resp.blob();
+            avatarImg = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+          } catch { avatarImg = null; }
+        }
+      }
+
+      // ── QR from hidden canvas — render at 4× for crisp output ────────────────
+      let qrImg: string | null = null;
+      const qrSrc = qrRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
+      if (qrSrc) {
+        // Redraw the QR at 4× resolution into a fresh canvas for PDF crispness
+        const hiRes = document.createElement("canvas");
+        const SCALE = 4;
+        hiRes.width  = qrSrc.width  * SCALE;
+        hiRes.height = qrSrc.height * SCALE;
+        const ctx = hiRes.getContext("2d");
+        if (ctx) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(qrSrc, 0, 0, hiRes.width, hiRes.height);
+          qrImg = hiRes.toDataURL("image/png");
+        }
+      }
+
+      // ── Page = scaled business card (landscape 200 × 120 mm) ─────────────────
+      // Each page IS the card — no wasted white space, no alignment issues.
+      const PW = 200, PH = 120;
+      const PAD = 8;   // inner padding mm
+
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [PH, PW] });
+
+      // ── Reusable: draw full-page card background ──────────────────────────────
+      const drawBg = () => {
+        pdf.setFillColor(bR, bG, bB);
+        pdf.rect(0, 0, PW, PH, "F");
+      };
+
+      // ════════════════════════════════════════════════════════════════════════
+      // PAGE 1 — FRONT
+      // ════════════════════════════════════════════════════════════════════════
+      drawBg();
+
+      // Full-width accent header band
+      const BAND = 44;
+      pdf.setFillColor(aR, aG, aB);
+      pdf.rect(0, 0, PW, BAND, "F");
+
+      // Avatar — entirely inside the header band, left side
+      const AV = 28;
+      const avX = PAD + 4;
+      const avY = (BAND - AV) / 2;   // vertically centred in band
+
+      if (avatarImg) {
+        // White border ring
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(avX - 2, avY - 2, AV + 4, AV + 4, 2.5, 2.5, "F");
+        pdf.addImage(avatarImg, "JPEG", avX, avY, AV, AV);
+      }
+
+      // Name + title — right of avatar (or from left if no avatar)
+      const nameX = avatarImg ? avX + AV + 8 : PAD;
+      const nameY = avatarImg ? avY + 9 : BAND / 2 - 2;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.setTextColor(onA[0], onA[1], onA[2]);
+      pdf.text(card.displayName, nameX, nameY);
+
+      if (card.jobTitle) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.setTextColor(onA[0], onA[1], onA[2]);
+        pdf.text(card.jobTitle, nameX, nameY + 8);
+      }
+
+      // ── Body area ────────────────────────────────────────────────────────────
+      let cY = BAND + PAD + 2;
+
+      if (card.company) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(tR, tG, tB);
+        pdf.text(card.company, PAD, cY);
+        cY += 6;
+      }
+
+      // Accent rule
+      pdf.setDrawColor(aR, aG, aB);
+      pdf.setLineWidth(0.4);
+      pdf.line(PAD, cY, PW - PAD, cY);
+      cY += 5;
+
+      // Contact rows — two columns if 3 items, single column otherwise
+      const contacts = [
+        { label: "Email",   value: card.email   },
+        { label: "Phone",   value: card.phone   },
+        { label: "Website", value: card.website },
+      ].filter(c => !!c.value);
+
+      contacts.forEach(({ label: lbl, value }) => {
+        pdf.setFillColor(aR, aG, aB);
+        pdf.circle(PAD + 1.8, cY - 1.5, 1.5, "F");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.setTextColor(aR, aG, aB);
+        pdf.text(lbl + ":", PAD + 6, cY);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(tR, tG, tB);
+        pdf.text(value!, PAD + 28, cY);
+        cY += 7;
       });
 
-      // Capture back
-      const backCanvas = await html2canvas(cardBack.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
-      });
+      // Watermark bottom-right
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(6.5);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text("mydigitalcard.app", PW - PAD, PH - 4, { align: "right" });
 
-      // Standard business card ratio: 3.5" x 2" = 252pt x 144pt
-      const W = frontCanvas.width  / 3;
-      const H = frontCanvas.height / 3;
-      const pxToPt = 72 / 96; // CSS px → points
-      const ptW = W * pxToPt;
-      const ptH = H * pxToPt;
+      // ════════════════════════════════════════════════════════════════════════
+      // PAGE 2 — BACK
+      // ════════════════════════════════════════════════════════════════════════
+      pdf.addPage([PH, PW], "landscape");
+      drawBg();
 
-      const pdf = new jsPDF({
-        orientation: ptW > ptH ? "landscape" : "portrait",
-        unit: "pt",
-        format: [ptW, ptH],
-      });
+      // QR code — perfectly square, centred horizontally, near top
+      const QR = 68;                            // mm — square
+      const qrX = (PW - QR) / 2;
+      const qrY = PAD;
 
-      // Page 1: front
-      pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, ptW, ptH);
+      if (qrImg) {
+        // Clean white frame, same padding on all 4 sides
+        const FRAME = 4;
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(qrX - FRAME, qrY - FRAME, QR + FRAME * 2, QR + FRAME * 2, 3, 3, "F");
+        // Accent border
+        pdf.setDrawColor(aR, aG, aB);
+        pdf.setLineWidth(0.5);
+        pdf.roundedRect(qrX - FRAME, qrY - FRAME, QR + FRAME * 2, QR + FRAME * 2, 3, 3, "S");
+        // QR: width === height → no stretching
+        pdf.addImage(qrImg, "PNG", qrX, qrY, QR, QR);
+      }
 
-      // Page 2: back
-      pdf.addPage([ptW, ptH], ptW > ptH ? "landscape" : "portrait");
-      pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", 0, 0, ptW, ptH);
+      // Info below QR
+      let bY = qrY + QR + 7;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      pdf.setTextColor(170, 170, 170);
+      pdf.text("SCAN TO CONNECT", PW / 2, bY, { align: "center" });
+      bY += 3.5;
+
+      // Accent divider
+      pdf.setDrawColor(aR, aG, aB);
+      pdf.setLineWidth(0.5);
+      pdf.line(PW / 2 - 14, bY, PW / 2 + 14, bY);
+      bY += 5.5;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(13);
+      pdf.setTextColor(tR, tG, tB);
+      pdf.text(card.displayName, PW / 2, bY, { align: "center" });
+      bY += 5.5;
+
+      if (card.jobTitle) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(aR, aG, aB);
+        pdf.text(card.jobTitle, PW / 2, bY, { align: "center" });
+        bY += 5;
+      }
+      if (card.company) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(tR, tG, tB);
+        pdf.text(card.company, PW / 2, bY, { align: "center" });
+      }
+
+      // Watermark
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(6.5);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text("mydigitalcard.app", PW - PAD, PH - 4, { align: "right" });
 
       pdf.save(`${card.slug ?? "card"}.pdf`);
     } finally {
@@ -509,45 +733,6 @@ export default function CardCreatedPage() {
         </div>
       </div>
 
-      {/* ── Hidden card faces for PDF/Print capture — no controls, no 3D ── */}
-      <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden>
-        <div ref={cardFront}>
-          <CardPreview
-            config={config as TemplateConfig}
-            size="lg"
-            sampleName={card.displayName}
-            sampleTitle={card.jobTitle ?? undefined}
-            sampleCompany={card.company ?? undefined}
-            sampleTagline={card.bio ?? undefined}
-            sampleEmail={card.email ?? undefined}
-            samplePhone={card.phone ?? undefined}
-            sampleWebsite={card.website ?? undefined}
-            sampleAvatar={card.avatarUrl}
-            staticFace="front"
-            hideIfNoAvatar
-            hideEmptyFields
-            key={`front-${card.id}`}
-          />
-        </div>
-        <div ref={cardBack}>
-          <CardPreview
-            config={config as TemplateConfig}
-            size="lg"
-            sampleName={card.displayName}
-            sampleTitle={card.jobTitle ?? undefined}
-            sampleCompany={card.company ?? undefined}
-            sampleTagline={card.bio ?? undefined}
-            sampleEmail={card.email ?? undefined}
-            samplePhone={card.phone ?? undefined}
-            sampleWebsite={card.website ?? undefined}
-            sampleAvatar={card.avatarUrl}
-            staticFace="back"
-            hideIfNoAvatar
-            hideEmptyFields
-            key={`back-${card.id}`}
-          />
-        </div>
-      </div>
     </div>
   );
 }

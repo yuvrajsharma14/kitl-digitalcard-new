@@ -16,14 +16,25 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
   const card = await prisma.card.findFirst({
     where: { id: params.id, userId: session.user.id },
-    include: { socialLinks: { orderBy: { order: "asc" } }, analytics: true },
+    include: {
+      socialLinks: { orderBy: { order: "asc" } },
+      analytics:   true,
+      user:        { select: { avatarUrl: true } },
+    },
   });
 
   if (!card) {
     return NextResponse.json({ error: "Card not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ card });
+  // Fall back to the user's profile photo if the card has no dedicated avatar
+  const { user, ...cardData } = card;
+  const resolvedCard = {
+    ...cardData,
+    avatarUrl: cardData.avatarUrl ?? user?.avatarUrl ?? null,
+  };
+
+  return NextResponse.json({ card: resolvedCard });
 }
 
 // PUT /api/v1/cards/:id

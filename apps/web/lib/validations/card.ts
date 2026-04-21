@@ -23,7 +23,7 @@ export const cardSchema = z.object({
   email:       z.string().email("Please enter a valid email").optional().or(z.literal("")),
   phone:       z.string().max(20).optional(),
   website:     z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  avatarUrl:   z.string().url().optional().or(z.literal("")),
+  avatarUrl:   z.string().optional().or(z.literal("")),
   styles:      z.record(z.unknown()).optional(), // template config snapshot
   isPublished: z.boolean().default(false),
   socialLinks: z.array(socialLinkSchema).max(10).default([]),

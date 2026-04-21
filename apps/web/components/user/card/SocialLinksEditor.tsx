@@ -36,8 +36,17 @@ interface Props {
 }
 
 export function SocialLinksEditor({ links, onChange }: Props) {
+  const usedPlatforms = new Set(links.map((l) => l.platform));
+
+  // Pick the first platform not yet added, falling back to the first option
+  function nextAvailablePlatform(): SocialLinkInput["platform"] {
+    const available = PLATFORMS.find((p) => !usedPlatforms.has(p.value as SocialLinkInput["platform"]));
+    return (available?.value ?? PLATFORMS[0].value) as SocialLinkInput["platform"];
+  }
+
   function addLink() {
-    onChange([...links, { platform: "LINKEDIN", url: "", order: links.length }]);
+    const platform = nextAvailablePlatform();
+    onChange([...links, { platform, url: "", order: links.length }]);
   }
 
   function removeLink(idx: number) {
@@ -48,6 +57,9 @@ export function SocialLinksEditor({ links, onChange }: Props) {
     onChange(links.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
 
+  // All platforms are already added — hide the add button
+  const allUsed = usedPlatforms.size >= PLATFORMS.length;
+
   return (
     <div className="space-y-3">
       {links.length === 0 && (
@@ -56,46 +68,53 @@ export function SocialLinksEditor({ links, onChange }: Props) {
         </p>
       )}
 
-      {links.map((link, idx) => (
-        <div key={idx} className="flex items-center gap-2">
-          <Select
-            value={link.platform}
-            onValueChange={(val) =>
-              updateLink(idx, { platform: val as SocialLinkInput["platform"], url: "" })
-            }
-          >
-            <SelectTrigger className="w-36 shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PLATFORMS.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {links.map((link, idx) => {
+        // Each row can select its own platform + any not yet used by other rows
+        const availableForRow = PLATFORMS.filter(
+          (p) => p.value === link.platform || !usedPlatforms.has(p.value as SocialLinkInput["platform"])
+        );
 
-          <Input
-            className="flex-1 text-sm"
-            placeholder={PLACEHOLDERS[link.platform] ?? "https://..."}
-            value={link.url}
-            onChange={(e) => updateLink(idx, { url: e.target.value })}
-          />
+        return (
+          <div key={idx} className="flex items-center gap-2">
+            <Select
+              value={link.platform}
+              onValueChange={(val) =>
+                updateLink(idx, { platform: val as SocialLinkInput["platform"], url: "" })
+              }
+            >
+              <SelectTrigger className="w-36 shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableForRow.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-gray-400 hover:text-red-500"
-            onClick={() => removeLink(idx)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ))}
+            <Input
+              className="flex-1 text-sm"
+              placeholder={PLACEHOLDERS[link.platform] ?? "https://..."}
+              value={link.url}
+              onChange={(e) => updateLink(idx, { url: e.target.value })}
+            />
 
-      {links.length < 10 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-gray-400 hover:text-red-500"
+              onClick={() => removeLink(idx)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      })}
+
+      {!allUsed && links.length < 10 && (
         <Button
           type="button"
           variant="outline"

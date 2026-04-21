@@ -132,6 +132,12 @@ export default function BuilderPage() {
       const avatarUrl = avatarBase64 ? await uploadAvatar() : null;
       const styles    = { ...DEFAULT_TEMPLATE_CONFIG, ...(selectedTemplate?.config ?? {}) };
 
+      const normalizeUrl = (u: string) => {
+        const t = u.trim();
+        if (!t || t.startsWith("http://") || t.startsWith("https://")) return t;
+        return "https://" + t;
+      };
+
       const res = await fetch("/api/v1/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,16 +148,22 @@ export default function BuilderPage() {
           bio:         bio.trim()       || undefined,
           email:       email.trim()     || undefined,
           phone:       phone.trim()     || undefined,
-          website:     website.trim()   || undefined,
+          website:     normalizeUrl(website) || undefined,
           avatarUrl:   avatarUrl        ?? undefined,
           styles,
           isPublished: false,
-          socialLinks: socialLinks.filter((l) => l.url.trim()),
+          socialLinks: socialLinks
+            .filter((l) => l.url.trim())
+            .map((l) => ({ ...l, url: normalizeUrl(l.url) })),
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed to create card."); return; }
+      if (!res.ok) {
+        const msg = typeof data.error === "string" ? data.error : "Please check your inputs and try again.";
+        setError(msg);
+        return;
+      }
       router.push(`/card/${data.card.id}/created`);
     } finally {
       setSaving(false);

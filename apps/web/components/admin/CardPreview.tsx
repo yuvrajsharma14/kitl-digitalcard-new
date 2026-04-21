@@ -88,8 +88,8 @@ const SAMPLE_URL = "https://mydigitalcard.app/u/alex-johnson";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
-function isLight(hex: string): boolean {
-  if (!hex.startsWith("#") || hex.length < 7) return false;
+function isLight(hex: string | null | undefined): boolean {
+  if (!hex || typeof hex !== "string" || !hex.startsWith("#") || hex.length < 7) return false;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -132,7 +132,12 @@ export function CardPreview({
   hideIfNoAvatar   = false,
   hideEmptyFields  = false,
 }: CardPreviewProps) {
-  const { layout, backgroundColor, textColor, accentColor, fontFamily } = config;
+  // Normalise — DB-stored configs can have null fields that override the spread defaults
+  const layout          = config.layout          ?? "classic";
+  const backgroundColor = config.backgroundColor ?? "#ffffff";
+  const textColor       = config.textColor       ?? "#1a1a2e";
+  const accentColor     = config.accentColor     ?? "#6366f1";
+  const fontFamily      = config.fontFamily      ?? "inter";
   const lg = size === "lg";
 
   const [flipped, setFlipped] = useState(defaultFlipped);

@@ -108,7 +108,11 @@ export default function QuickCardPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed to create card."); return; }
+      if (!res.ok) {
+        const msg = typeof data.error === "string" ? data.error : "Please check your inputs and try again.";
+        setError(msg);
+        return;
+      }
       router.push(`/card/${data.card.id}/created`);
     } finally {
       setSaving(false);
