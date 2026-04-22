@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Mail, Phone, Globe, Linkedin, Facebook, Instagram,
-  Twitter, Download, Share2, Check, ChevronRight, Loader2,
+  Twitter, Share2, Check, ChevronRight, Loader2, UserPlus,
 } from "lucide-react";
 import { CardPreview } from "@/components/admin/CardPreview";
 import { DEFAULT_TEMPLATE_CONFIG } from "@/lib/types/template";
@@ -62,24 +62,7 @@ export default function PublicCardPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function downloadVCard() {
-    if (!card) return;
-    const lines = [
-      "BEGIN:VCARD", "VERSION:3.0",
-      `FN:${card.displayName}`,
-      card.jobTitle ? `TITLE:${card.jobTitle}` : "",
-      card.company  ? `ORG:${card.company}`    : "",
-      card.email    ? `EMAIL:${card.email}`    : "",
-      card.phone    ? `TEL:${card.phone}`      : "",
-      card.website  ? `URL:${card.website}`    : "",
-      `URL;type=profile:${publicUrl}`,
-      "END:VCARD",
-    ].filter(Boolean).join("\n");
-    const a = document.createElement("a");
-    a.href     = URL.createObjectURL(new Blob([lines], { type: "text/vcard" }));
-    a.download = `${card.slug}.vcf`;
-    a.click();
-  }
+  const vcfUrl = `/api/v1/public/cards/${slug}/vcf`;
 
   const config: TemplateConfig = card?.styles
     ? { ...DEFAULT_TEMPLATE_CONFIG, ...(card.styles as Partial<TemplateConfig>) }
@@ -210,15 +193,16 @@ export default function PublicCardPage() {
 
         {/* ── Save contact + QR — compact inline row ── */}
         <div className="flex items-center gap-3">
-          {/* Save Contact — compact pill button */}
-          <button
-            onClick={downloadVCard}
-            className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-white hover:shadow-md active:scale-95 transition-all"
-            style={{ borderColor: accent + "44" }}
+          {/* Save Contact — downloads .vcf from server */}
+          <a
+            href={vcfUrl}
+            download
+            className="flex items-center gap-2 rounded-full border bg-white/80 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-white hover:shadow-md active:scale-95 transition-all"
+            style={{ borderColor: accent + "55" }}
           >
-            <Download className="h-3.5 w-3.5" style={{ color: accent }} />
+            <UserPlus className="h-3.5 w-3.5" style={{ color: accent }} />
             Save Contact
-          </button>
+          </a>
 
           {/* QR code — small, inline, no extra label */}
           <div
