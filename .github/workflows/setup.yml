@@ -251,45 +251,8 @@ jobs:
           source: "docker-compose.prod.yml,nginx/mydigitalcard.conf"
           target: /opt/mydigitalcard/
 
-      # ── 3d. Configure Nginx ───────────────────────────────────────────────────
-      - name: Configure Nginx
-        uses: appleboy/ssh-action@v1
-        env:
-          DOMAIN: ${{ secrets.PROD_DOMAIN }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DOMAIN
-          script: |
-            set -e
-
-            echo "── Configuring Nginx ──"
-            sudo cp /opt/mydigitalcard/nginx/mydigitalcard.conf \
-              /etc/nginx/sites-available/mydigitalcard.conf
-
-            # Replace placeholder domain with the real domain
-            sudo sed -i "s/mydigitalcard.app/${DOMAIN}/g" \
-              /etc/nginx/sites-available/mydigitalcard.conf
-
-            sudo ln -sf /etc/nginx/sites-available/mydigitalcard.conf \
-              /etc/nginx/sites-enabled/mydigitalcard.conf
-            sudo rm -f /etc/nginx/sites-enabled/default
-
-            # Temporarily disable SSL lines so Nginx starts before we have a cert
-            sudo sed -i 's|ssl_certificate |#ssl_certificate |g' \
-              /etc/nginx/sites-available/mydigitalcard.conf
-            sudo sed -i 's|ssl_protocols|#ssl_protocols|g' \
-              /etc/nginx/sites-available/mydigitalcard.conf
-            sudo sed -i 's|ssl_ciphers|#ssl_ciphers|g' \
-              /etc/nginx/sites-available/mydigitalcard.conf
-
-            # Remove the HTTPS server block temporarily so port 80 works for ACME challenge
-            sudo nginx -t && sudo systemctl reload nginx
-            echo "✓ Nginx configured"
-
-      # ── 3e. Obtain SSL certificate ────────────────────────────────────────────
-      - name: Obtain Let's Encrypt SSL certificate
+      # ── 3d. Configure Nginx (HTTP only) & obtain SSL cert ────────────────────
+      - name: Configure Nginx and obtain SSL certificate
         uses: appleboy/ssh-action@v1
         env:
           DOMAIN: ${{ secrets.PROD_DOMAIN }}
@@ -302,22 +265,50 @@ jobs:
           script: |
             set -e
 
+            echo "── Writing temporary HTTP-only Nginx config (needed before cert exists) ──"
+            sudo tee /etc/nginx/sites-available/mydigitalcard.conf > /dev/null << NGINXEOF
+            server {
+                listen 80;
+                server_name ${DOMAIN} www.${DOMAIN};
+
+                location /.well-known/acme-challenge/ {
+                    root /var/www/certbot;
+                }
+
+                location / {
+                    proxy_pass http://127.0.0.1:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+            }
+            NGINXEOF
+
+            sudo ln -sf /etc/nginx/sites-available/mydigitalcard.conf \
+              /etc/nginx/sites-enabled/mydigitalcard.conf
+            sudo rm -f /etc/nginx/sites-enabled/default
+
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✓ Temporary HTTP Nginx config active"
+
             echo "── Obtaining SSL certificate for ${DOMAIN} ──"
             sudo certbot certonly --nginx \
               -d ${DOMAIN} -d www.${DOMAIN} \
               --non-interactive --agree-tos \
               -m ${EMAIL}
+            echo "✓ Certificate obtained"
 
-            # Restore the full Nginx config (with SSL) from the repo copy
+            echo "── Switching to full HTTPS Nginx config ──"
             sudo cp /opt/mydigitalcard/nginx/mydigitalcard.conf \
               /etc/nginx/sites-available/mydigitalcard.conf
             sudo sed -i "s/mydigitalcard.app/${DOMAIN}/g" \
               /etc/nginx/sites-available/mydigitalcard.conf
 
             sudo nginx -t && sudo systemctl reload nginx
-            echo "✓ SSL certificate obtained and Nginx reloaded"
+            echo "✓ Full HTTPS Nginx config active"
 
-            # Verify auto-renewal
             sudo certbot renew --dry-run
             echo "✓ Auto-renewal verified"
 
