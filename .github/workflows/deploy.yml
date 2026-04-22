@@ -1,0 +1,127 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-south-1                        # ← change to your region
+  ECR_WEB_REPO: mydigitalcard-web
+  ECR_MIGRATE_REPO: mydigitalcard-migrate
+
+jobs:
+  # ─── 1. Lint & type-check ─────────────────────────────────────────────────────
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter web lint
+
+      - run: pnpm --filter web type-check
+
+  # ─── 2. Build & push images to ECR (main branch only) ────────────────────────
+  build-and-push:
+    name: Build & push to ECR
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      web-image: ${{ steps.push.outputs.web-image }}
+      migrate-image: ${{ steps.push.outputs.migrate-image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push both images
+        id: push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Web image
+          docker build -f apps/web/Dockerfile \
+            -t $REGISTRY/$ECR_WEB_REPO:$SHA \
+            -t $REGISTRY/$ECR_WEB_REPO:latest \
+            .
+          docker push $REGISTRY/$ECR_WEB_REPO:$SHA
+          docker push $REGISTRY/$ECR_WEB_REPO:latest
+
+          # Migrate image
+          docker build -f apps/web/Dockerfile.migrate \
+            -t $REGISTRY/$ECR_MIGRATE_REPO:$SHA \
+            -t $REGISTRY/$ECR_MIGRATE_REPO:latest \
+            .
+          docker push $REGISTRY/$ECR_MIGRATE_REPO:$SHA
+          docker push $REGISTRY/$ECR_MIGRATE_REPO:latest
+
+          echo "web-image=$REGISTRY/$ECR_WEB_REPO:$SHA" >> $GITHUB_OUTPUT
+          echo "migrate-image=$REGISTRY/$ECR_MIGRATE_REPO:$SHA" >> $GITHUB_OUTPUT
+
+  # ─── 3. Deploy to EC2 ─────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_REGION,ECR_WEB_REPO,ECR_MIGRATE_REPO
+          script: |
+            set -e
+
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            ECR_REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+            # Authenticate Docker to ECR
+            aws ecr get-login-password --region $AWS_REGION | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            cd /opt/mydigitalcard
+
+            # Inject ECR_REGISTRY into env so docker-compose.prod.yml can resolve image names
+            sed -i "s|^ECR_REGISTRY=.*|ECR_REGISTRY=$ECR_REGISTRY|" .env.prod
+
+            # Pull latest images
+            docker compose -f docker-compose.prod.yml --env-file .env.prod pull web migrate
+
+            # Run migration (one-shot — exits when done)
+            docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm migrate
+
+            # Restart only the web container (postgres + redis keep running)
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps web
+
+            # Clean up dangling images
+            docker image prune -f

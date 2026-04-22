@@ -1,0 +1,378 @@
+name: Initial Server Setup
+
+# Run this ONCE to bootstrap a brand-new EC2 instance.
+# Trigger manually from: GitHub → Actions → "Initial Server Setup" → Run workflow
+#
+# Prerequisites before running:
+#   1. EC2 instance is running (Ubuntu 22.04, t3.small)
+#   2. Elastic IP is attached and your domain DNS points to it
+#   3. Security group allows ports 22, 80, 443
+#   4. All GitHub secrets listed below are set
+#
+# GitHub secrets required:
+#   AWS_ACCESS_KEY_ID         — IAM user (github-actions-deploy) access key
+#   AWS_SECRET_ACCESS_KEY     — IAM user secret key
+#   EC2_HOST                  — Elastic IP of the EC2 instance
+#   EC2_SSH_KEY               — Full contents of the .pem key file
+#   PROD_POSTGRES_PASSWORD    — Strong password for PostgreSQL (you choose)
+#   PROD_REDIS_PASSWORD       — Strong password for Redis (you choose)
+#   PROD_NEXTAUTH_SECRET      — Run: openssl rand -base64 32
+#   PROD_DOMAIN               — Your domain, e.g. mydigitalcard.app
+#   PROD_LETSENCRYPT_EMAIL    — Email for Let's Encrypt expiry notices
+#   PROD_GOOGLE_CLIENT_ID     — (optional, leave empty if not set up)
+#   PROD_GOOGLE_CLIENT_SECRET — (optional)
+#   PROD_CLOUDINARY_CLOUD_NAME — (optional)
+#   PROD_CLOUDINARY_API_KEY   — (optional)
+#   PROD_CLOUDINARY_API_SECRET — (optional)
+#   PROD_RESEND_API_KEY       — (optional)
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-1           # ← change to your region
+  ECR_WEB_REPO: mydigitalcard-web
+  ECR_MIGRATE_REPO: mydigitalcard-migrate
+
+jobs:
+  # ─── 1. Create ECR repositories ───────────────────────────────────────────────
+  create-ecr:
+    name: Create ECR repositories
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create ECR repos (safe to run if they already exist)
+        run: |
+          aws ecr describe-repositories --repository-names $ECR_WEB_REPO \
+            --region $AWS_REGION 2>/dev/null \
+            || aws ecr create-repository --repository-name $ECR_WEB_REPO \
+               --region $AWS_REGION
+
+          aws ecr describe-repositories --repository-names $ECR_MIGRATE_REPO \
+            --region $AWS_REGION 2>/dev/null \
+            || aws ecr create-repository --repository-name $ECR_MIGRATE_REPO \
+               --region $AWS_REGION
+
+          echo "ECR repositories ready:"
+          aws ecr describe-repositories \
+            --repository-names $ECR_WEB_REPO $ECR_MIGRATE_REPO \
+            --query 'repositories[*].repositoryUri' \
+            --output table
+
+  # ─── 2. Build initial Docker images & push to ECR ─────────────────────────────
+  build-and-push:
+    name: Build & push initial images
+    needs: create-ecr
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push web image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -f apps/web/Dockerfile \
+            -t $REGISTRY/$ECR_WEB_REPO:${{ github.sha }} \
+            -t $REGISTRY/$ECR_WEB_REPO:latest \
+            .
+          docker push $REGISTRY/$ECR_WEB_REPO:${{ github.sha }}
+          docker push $REGISTRY/$ECR_WEB_REPO:latest
+          echo "✓ Web image pushed: $REGISTRY/$ECR_WEB_REPO:latest"
+
+      - name: Build & push migrate image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -f apps/web/Dockerfile.migrate \
+            -t $REGISTRY/$ECR_MIGRATE_REPO:${{ github.sha }} \
+            -t $REGISTRY/$ECR_MIGRATE_REPO:latest \
+            .
+          docker push $REGISTRY/$ECR_MIGRATE_REPO:${{ github.sha }}
+          docker push $REGISTRY/$ECR_MIGRATE_REPO:latest
+          echo "✓ Migrate image pushed: $REGISTRY/$ECR_MIGRATE_REPO:latest"
+
+  # ─── 3. Provision EC2 & start the app ─────────────────────────────────────────
+  provision-ec2:
+    name: Provision EC2 & start app
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get ECR registry URL
+        id: ecr
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "registry=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com" >> $GITHUB_OUTPUT
+
+      # ── 3a. Install system dependencies ──────────────────────────────────────
+      - name: Install Docker, Nginx, Certbot, AWS CLI
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+
+            echo "── Updating packages ──"
+            sudo apt-get update -q
+
+            echo "── Installing AWS CLI ──"
+            sudo apt-get install -y -q awscli
+
+            echo "── Installing Docker ──"
+            if ! command -v docker &>/dev/null; then
+              sudo apt-get install -y -q ca-certificates curl gnupg
+              sudo install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+                sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              sudo chmod a+r /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+                https://download.docker.com/linux/ubuntu \
+                $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              sudo apt-get update -q
+              sudo apt-get install -y -q docker-ce docker-ce-cli containerd.io docker-compose-plugin
+              sudo usermod -aG docker ubuntu
+            else
+              echo "Docker already installed — skipping"
+            fi
+
+            echo "── Installing Nginx + Certbot ──"
+            sudo apt-get install -y -q nginx certbot python3-certbot-nginx
+
+            echo "── Setting up swap (2 GB) ──"
+            if ! swapon --show | grep -q /swapfile; then
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+              echo "Swap created"
+            else
+              echo "Swap already exists — skipping"
+            fi
+
+            echo "── All dependencies installed ──"
+
+      # ── 3b. Write config files ────────────────────────────────────────────────
+      - name: Write .env.prod and docker-compose.prod.yml to EC2
+        uses: appleboy/ssh-action@v1
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          DOMAIN: ${{ secrets.PROD_DOMAIN }}
+          POSTGRES_PASSWORD: ${{ secrets.PROD_POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.PROD_REDIS_PASSWORD }}
+          NEXTAUTH_SECRET: ${{ secrets.PROD_NEXTAUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.PROD_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.PROD_CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.PROD_CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.PROD_CLOUDINARY_API_SECRET }}
+          RESEND_API_KEY: ${{ secrets.PROD_RESEND_API_KEY }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY,DOMAIN,POSTGRES_PASSWORD,REDIS_PASSWORD,NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,RESEND_API_KEY
+          script: |
+            set -e
+
+            sudo mkdir -p /opt/mydigitalcard
+            sudo chown ubuntu:ubuntu /opt/mydigitalcard
+            cd /opt/mydigitalcard
+
+            echo "── Writing .env.prod ──"
+            cat > .env.prod << EOF
+            # Database
+            POSTGRES_USER=mdc_user
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+            # Redis
+            REDIS_PASSWORD=${REDIS_PASSWORD}
+
+            # ECR registry
+            ECR_REGISTRY=${ECR_REGISTRY}
+
+            # App
+            NEXTAUTH_URL=https://${DOMAIN}
+            NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+            AUTH_SECRET=${NEXTAUTH_SECRET}
+
+            # Optional integrations
+            GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+            CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+            CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+            CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+            RESEND_API_KEY=${RESEND_API_KEY}
+            EOF
+
+            chmod 600 .env.prod
+            echo "✓ .env.prod written"
+
+      # ── 3c. Copy project files via SCP ────────────────────────────────────────
+      - name: Copy docker-compose.prod.yml and nginx config to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml,nginx/mydigitalcard.conf"
+          target: /opt/mydigitalcard/
+
+      # ── 3d. Configure Nginx ───────────────────────────────────────────────────
+      - name: Configure Nginx
+        uses: appleboy/ssh-action@v1
+        env:
+          DOMAIN: ${{ secrets.PROD_DOMAIN }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOMAIN
+          script: |
+            set -e
+
+            echo "── Configuring Nginx ──"
+            sudo cp /opt/mydigitalcard/nginx/mydigitalcard.conf \
+              /etc/nginx/sites-available/mydigitalcard.conf
+
+            # Replace placeholder domain with the real domain
+            sudo sed -i "s/mydigitalcard.app/${DOMAIN}/g" \
+              /etc/nginx/sites-available/mydigitalcard.conf
+
+            sudo ln -sf /etc/nginx/sites-available/mydigitalcard.conf \
+              /etc/nginx/sites-enabled/mydigitalcard.conf
+            sudo rm -f /etc/nginx/sites-enabled/default
+
+            # Temporarily disable SSL lines so Nginx starts before we have a cert
+            sudo sed -i 's|ssl_certificate |#ssl_certificate |g' \
+              /etc/nginx/sites-available/mydigitalcard.conf
+            sudo sed -i 's|ssl_protocols|#ssl_protocols|g' \
+              /etc/nginx/sites-available/mydigitalcard.conf
+            sudo sed -i 's|ssl_ciphers|#ssl_ciphers|g' \
+              /etc/nginx/sites-available/mydigitalcard.conf
+
+            # Remove the HTTPS server block temporarily so port 80 works for ACME challenge
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✓ Nginx configured"
+
+      # ── 3e. Obtain SSL certificate ────────────────────────────────────────────
+      - name: Obtain Let's Encrypt SSL certificate
+        uses: appleboy/ssh-action@v1
+        env:
+          DOMAIN: ${{ secrets.PROD_DOMAIN }}
+          EMAIL: ${{ secrets.PROD_LETSENCRYPT_EMAIL }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOMAIN,EMAIL
+          script: |
+            set -e
+
+            echo "── Obtaining SSL certificate for ${DOMAIN} ──"
+            sudo certbot certonly --nginx \
+              -d ${DOMAIN} -d www.${DOMAIN} \
+              --non-interactive --agree-tos \
+              -m ${EMAIL}
+
+            # Restore the full Nginx config (with SSL) from the repo copy
+            sudo cp /opt/mydigitalcard/nginx/mydigitalcard.conf \
+              /etc/nginx/sites-available/mydigitalcard.conf
+            sudo sed -i "s/mydigitalcard.app/${DOMAIN}/g" \
+              /etc/nginx/sites-available/mydigitalcard.conf
+
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✓ SSL certificate obtained and Nginx reloaded"
+
+            # Verify auto-renewal
+            sudo certbot renew --dry-run
+            echo "✓ Auto-renewal verified"
+
+      # ── 3f. Pull images, migrate, start app ───────────────────────────────────
+      - name: Pull images, run migration, start app
+        uses: appleboy/ssh-action@v1
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          AWS_REGION_ENV: ${{ env.AWS_REGION }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY,AWS_REGION_ENV
+          script: |
+            set -e
+            cd /opt/mydigitalcard
+
+            echo "── Logging in to ECR ──"
+            aws ecr get-login-password --region $AWS_REGION_ENV | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            echo "── Pulling images ──"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+
+            echo "── Starting postgres and redis ──"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod \
+              up -d postgres redis
+
+            echo "── Waiting for postgres to be healthy ──"
+            for i in $(seq 1 30); do
+              docker compose -f docker-compose.prod.yml --env-file .env.prod \
+                exec -T postgres pg_isready -U mdc_user && break
+              echo "Waiting... ($i/30)"
+              sleep 2
+            done
+
+            echo "── Running database migration ──"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod \
+              run --rm migrate
+
+            echo "── Starting web app ──"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod \
+              up -d web
+
+            echo "── Verifying app is responding ──"
+            sleep 10
+            curl -sf http://127.0.0.1:3000/ > /dev/null && \
+              echo "✓ App is responding on port 3000" || \
+              (echo "✗ App not responding — check logs:" && \
+               docker compose -f docker-compose.prod.yml logs --tail=50 web && exit 1)
+
+            echo ""
+            echo "═══════════════════════════════════"
+            echo "  Setup complete!"
+            echo "  Visit: https://${DOMAIN:-your-domain}"
+            echo "═══════════════════════════════════"
+            docker compose -f docker-compose.prod.yml ps
