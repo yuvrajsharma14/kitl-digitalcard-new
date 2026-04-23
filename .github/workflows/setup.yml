@@ -173,6 +173,7 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          EC2_IP: ${{ secrets.EC2_HOST }}
           POSTGRES_PASSWORD: ${{ secrets.PROD_POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.PROD_REDIS_PASSWORD }}
           NEXTAUTH_SECRET: ${{ secrets.PROD_NEXTAUTH_SECRET }}
@@ -186,23 +187,19 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY,POSTGRES_PASSWORD,REDIS_PASSWORD,NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,RESEND_API_KEY
+          envs: ECR_REGISTRY,EC2_IP,POSTGRES_PASSWORD,REDIS_PASSWORD,NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,RESEND_API_KEY
           script: |
             set -e
             sudo mkdir -p /opt/mydigitalcard
             sudo chown ubuntu:ubuntu /opt/mydigitalcard
             cd /opt/mydigitalcard
 
-            # Derive the public IP from EC2 metadata
-            PUBLIC_IP=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo "Public IP: $PUBLIC_IP"
-
             cat > .env.prod << EOF
             POSTGRES_USER=mdc_user
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             REDIS_PASSWORD=${REDIS_PASSWORD}
             ECR_REGISTRY=${ECR_REGISTRY}
-            NEXTAUTH_URL=http://${PUBLIC_IP}
+            NEXTAUTH_URL=http://${EC2_IP}
             NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
             AUTH_SECRET=${NEXTAUTH_SECRET}
             GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -214,7 +211,7 @@ jobs:
             EOF
 
             chmod 600 .env.prod
-            echo "✓ .env.prod written (NEXTAUTH_URL=http://$PUBLIC_IP)"
+            echo "✓ .env.prod written"
 
       # ── 3c. Copy project files ────────────────────────────────────────────────
       - name: Copy docker-compose.prod.yml and nginx config to EC2
@@ -229,19 +226,20 @@ jobs:
       # ── 3d. Configure Nginx (HTTP only) ───────────────────────────────────────
       - name: Configure Nginx
         uses: appleboy/ssh-action@v1
+        env:
+          EC2_IP: ${{ secrets.EC2_HOST }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: EC2_IP
           script: |
             set -e
-
-            PUBLIC_IP=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4)
 
             sudo tee /etc/nginx/sites-available/mydigitalcard.conf > /dev/null << NGINXEOF
             server {
                 listen 80;
-                server_name $PUBLIC_IP _;
+                server_name $EC2_IP _;
 
                 proxy_buffer_size       128k;
                 proxy_buffers           4 256k;
@@ -267,7 +265,7 @@ jobs:
             sudo rm -f /etc/nginx/sites-enabled/default
 
             sudo nginx -t && sudo systemctl reload nginx
-            echo "✓ Nginx configured for http://$PUBLIC_IP"
+            echo "✓ Nginx configured for http://$EC2_IP"
 
       # ── 3e. Pull images, migrate, start app ───────────────────────────────────
       - name: Pull images, run migration, start app
@@ -275,11 +273,12 @@ jobs:
         env:
           AWS_REGION_VAR: ${{ env.AWS_REGION }}
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          EC2_IP: ${{ secrets.EC2_HOST }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_REGION_VAR,ECR_REGISTRY
+          envs: AWS_REGION_VAR,ECR_REGISTRY,EC2_IP
           script: |
             set -e
             cd /opt/mydigitalcard
@@ -316,10 +315,9 @@ jobs:
               && echo "✓ App is responding" \
               || (docker compose -f docker-compose.prod.yml logs --tail=50 web && exit 1)
 
-            PUBLIC_IP=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4)
             echo ""
             echo "════════════════════════════════════════"
             echo "  Setup complete!"
-            echo "  App running at: http://$PUBLIC_IP"
+            echo "  App running at: http://$EC2_IP"
             echo "════════════════════════════════════════"
             docker compose -f docker-compose.prod.yml ps
