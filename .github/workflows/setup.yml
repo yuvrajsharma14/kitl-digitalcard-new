@@ -272,13 +272,15 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           AWS_REGION_VAR: ${{ env.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
           EC2_IP: ${{ secrets.EC2_HOST }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_REGION_VAR,ECR_REGISTRY,EC2_IP
+          envs: AWS_REGION_VAR,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,ECR_REGISTRY,EC2_IP
           script: |
             set -e
             cd /opt/mydigitalcard
