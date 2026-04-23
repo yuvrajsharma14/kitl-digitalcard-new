@@ -139,10 +139,11 @@ Digital Card New/
 | 8 | User Portal — Dashboard (stats + recent cards) | ✅ Done |
 | 9 | User Portal — My Cards (search, sort, filter, publish toggle, primary card) | ✅ Done |
 | 10 | User Portal — Analytics (30-day chart, per-card stats) | ✅ Done |
-| 11 | User Portal — Settings (profile, password, delete account) | ⬜ Pending |
+| 11 | User Portal — Settings (profile, password, delete account) | ✅ Done |
 | 12 | Avatar / photo upload (Cloudinary) | ⬜ Pending |
-| 13 | vCard (.vcf) download on public card view | ⬜ Pending |
-| 14 | Public Landing page (`/`) | ⬜ Pending |
+| 13 | vCard (.vcf) download on public card view | ✅ Done |
+| 14 | Public Landing page (`/`) | ✅ Done |
+| 15 | AWS deployment (single EC2 + Docker Compose + GitHub Actions CI/CD) | ✅ Done |
 
 ### What's been built
 
@@ -254,6 +255,37 @@ Digital Card New/
 - Ticket categories: GENERAL, SUGGESTION, COMPLAINT, BUG, BILLING, OTHER
 - Ticket statuses: OPEN, IN_PROGRESS, RESOLVED, CLOSED
 
+**User Portal — Settings** (`/settings`)
+- Profile section — edit display name + job title; `PATCH /api/v1/user/profile`
+- Password section — change password with current password verification; `PATCH /api/v1/user/password`
+- Delete account section — requires typing "DELETE" to confirm; cascading delete of all user data in FK order; `DELETE /api/v1/user/account`
+- `DeleteAccountSection` component — Dialog with confirmation input, calls delete API then `signOut`
+
+**vCard (.vcf) download** (`/api/v1/public/cards/[username]/vcf`)
+- Server-side vCard 3.0 generator with proper line folding (75 char limit, CRLF)
+- Includes all fields: FN, N, TITLE, ORG, NOTE, EMAIL, TEL, URL, X-SOCIALPROFILE, PHOTO
+- Returns `Content-Type: text/vcard` with `Content-Disposition: attachment`
+- Public card page has "Save Contact" button linking to this route
+
+**Public Landing Page** (`/`)
+- Sticky nav, hero section with phone mockup, social proof bar
+- Features (6 cards), How it works (3 steps), Testimonials (3), Pricing ($0)
+- Mobile app section (App Store + Google Play — coming soon)
+- Final CTA + footer
+- `(public)/layout.tsx` added — wraps public routes in `h-full overflow-y-auto` so they scroll independently of the user portal's fixed layout
+
+**Auth fixes**
+- Removed `image: user.avatarUrl` from JWT authorize callback — base64 avatars caused HTTP 431
+- `loginAction` clears stale auth cookies before signing in, uses `redirectTo` for server-side redirect
+- `AUTH_SECRET` added to docker-compose — prevents JWTSessionError on Docker restart
+
+**Deployment** (AWS single EC2)
+- `docker-compose.prod.yml` — production Compose file using ECR images, port 3000 bound to localhost only
+- `nginx/mydigitalcard.conf` — Nginx reverse proxy config (HTTP now, SSL-ready when domain is added)
+- `.github/workflows/setup.yml` — one-time bootstrap workflow (manual trigger): creates ECR repos, builds images, installs Docker/Nginx on EC2, writes .env.prod, runs migration, starts app
+- `.github/workflows/deploy.yml` — CI/CD on every push to main: lint → build → push to ECR → SSH deploy
+- `docs/DEPLOYMENT.md` — full deployment guide
+
 ## Key API Routes
 
 | Method | Route | Description |
@@ -261,6 +293,11 @@ Digital Card New/
 | GET/POST | `/api/v1/cards` | List user's cards / create card |
 | GET/PUT/DELETE | `/api/v1/cards/[id]` | Get / update / delete a card |
 | PATCH | `/api/v1/cards/[id]/primary` | Set card as user's primary (transaction clears all, sets one) |
+| GET | `/api/v1/public/cards/[slug]` | Public card data (no auth) |
+| GET | `/api/v1/public/cards/[slug]/vcf` | Download vCard (.vcf) file (no auth) |
+| PATCH | `/api/v1/user/profile` | Update display name + job title |
+| PATCH | `/api/v1/user/password` | Change password (requires current password) |
+| DELETE | `/api/v1/user/account` | Delete account + all associated data |
 | GET/POST | `/api/v1/support/tickets` | User: list own tickets / submit new ticket |
 | GET | `/api/v1/admin/support/tickets` | Admin: list all tickets |
 | GET/PATCH | `/api/v1/admin/support/tickets/[id]` | Admin: get / update ticket status + note |
@@ -269,4 +306,4 @@ Digital Card New/
 | GET/PATCH/DELETE | `/api/v1/admin/users/[id]` | Admin: get / suspend/activate / delete user |
 | PATCH/DELETE | `/api/v1/admin/cards/[id]` | Admin: publish/unpublish / delete any card |
 
-*Last updated: 2026-04-21 — My Cards search/sort/filter + primary card complete*
+*Last updated: 2026-04-23 — Settings, vCard download, landing page, AWS deployment complete*
