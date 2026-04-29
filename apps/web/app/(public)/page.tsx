@@ -8,11 +8,88 @@ import {
 import { TestimonialsSlider } from "@/components/landing/TestimonialsSlider";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { TemplateShowcase } from "@/components/landing/TemplateShowcase";
+import { FAQS } from "@/lib/landing/faqs";
+import { siteConfig } from "@/lib/landing/site";
 
 export const metadata: Metadata = {
-  title: "My Digital Card — Free Digital Business Cards",
-  description:
-    "Create your free digital business card in minutes. Share via QR code, link, or NFC. Always up to date. No paper, no waste.",
+  title: `${siteConfig.name} — ${siteConfig.tagline}`,
+  description: siteConfig.description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type:        "website",
+    url:         siteConfig.url,
+    siteName:    siteConfig.name,
+    title:       `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
+  },
+  twitter: {
+    card:        "summary_large_image",
+    title:       `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    images:      [siteConfig.ogImage],
+  },
+};
+
+// JSON-LD structured data — read by Google, Bing, and AI assistants (ChatGPT,
+// Perplexity, etc.) to ground answers about the product. Combined into a single
+// @graph so all entities ship in one <script>.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id":   `${siteConfig.url}#organization`,
+      name:    siteConfig.name,
+      url:     siteConfig.url,
+      logo:    `${siteConfig.url}/favicon.ico`,
+      sameAs: [
+        "https://twitter.com/mydigitalcard",
+        "https://www.linkedin.com/company/mydigitalcard",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id":   `${siteConfig.url}#website`,
+      url:     siteConfig.url,
+      name:    siteConfig.name,
+      description: siteConfig.description,
+      publisher:   { "@id": `${siteConfig.url}#organization` },
+      inLanguage:  "en-US",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id":   `${siteConfig.url}#software`,
+      name:    siteConfig.name,
+      url:     siteConfig.url,
+      applicationCategory: "BusinessApplication",
+      operatingSystem:     "Web, iOS, Android",
+      description:         siteConfig.description,
+      offers: {
+        "@type":        "Offer",
+        price:          "0",
+        priceCurrency:  "USD",
+        availability:   "https://schema.org/InStock",
+      },
+      featureList: [
+        "Create unlimited digital business cards",
+        "Share via QR code or shareable link",
+        "Save contact to phone via vCard (.vcf)",
+        "Live analytics — views and link clicks",
+        "8 free professional templates",
+        "Custom colours and branding",
+        "Real-time updates across all shared cards",
+      ],
+    },
+    {
+      "@type":     "FAQPage",
+      mainEntity:  FAQS.map(({ q, a }) => ({
+        "@type": "Question",
+        name:    q,
+        acceptedAnswer: { "@type": "Answer", text: a },
+      })),
+    },
+  ],
 };
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -71,6 +148,12 @@ const SAMPLE_CARD = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 antialiased">
+
+      {/* ── Structured data for search engines & AI assistants ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── Nav ── */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
