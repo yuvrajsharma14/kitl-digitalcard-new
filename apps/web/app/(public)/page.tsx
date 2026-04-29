@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   QrCode, Share2, Smartphone, Zap, RefreshCw, Globe,
-  BarChart2, Shield, Star, Check, ArrowRight,
+  BarChart2, Shield, ArrowRight,
   Mail, Phone, Linkedin,
 } from "lucide-react";
+import { TestimonialsSlider } from "@/components/landing/TestimonialsSlider";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { TemplateShowcase } from "@/components/landing/TemplateShowcase";
 
 export const metadata: Metadata = {
   title: "My Digital Card — Free Digital Business Cards",
@@ -53,35 +56,6 @@ const STEPS = [
   { step: "03", title: "Share it", desc: "Copy your link or show your QR code — anyone can view it instantly." },
 ];
 
-const TESTIMONIALS = [
-  {
-    name: "Sarah Mitchell",
-    role: "Marketing Director",
-    company: "BrightPath Agency",
-    avatar: "SM",
-    color: "bg-violet-500",
-    text: "I used to hand out 500 business cards a year. Now I just show my QR code. Everyone asks where I got it.",
-    rating: 5,
-  },
-  {
-    name: "James Okoye",
-    role: "Freelance Developer",
-    company: "Self-employed",
-    avatar: "JO",
-    color: "bg-blue-500",
-    text: "Updated my phone number and every client automatically had the new one. That alone is worth switching.",
-    rating: 5,
-  },
-  {
-    name: "Priya Sharma",
-    role: "Sales Manager",
-    company: "NovaTech Solutions",
-    avatar: "PS",
-    color: "bg-emerald-500",
-    text: "My whole sales team uses My Digital Card now. The analytics are surprisingly useful for follow-ups.",
-    rating: 5,
-  },
-];
 
 const SAMPLE_CARD = {
   name: "Alex Johnson",
@@ -91,18 +65,6 @@ const SAMPLE_CARD = {
   phone: "+1 (555) 234-5678",
   linkedin: "linkedin.com/in/alexj",
 };
-
-// ─── Components ───────────────────────────────────────────────────────────────
-
-function StarRating({ count }: { count: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-      ))}
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -123,6 +85,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-gray-900 transition-colors">How it works</a>
             <a href="#testimonials" className="hover:text-gray-900 transition-colors">Reviews</a>
+            <a href="#faq" className="hover:text-gray-900 transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-2">
             <Link
@@ -289,6 +252,25 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Stats bar ── */}
+        <section className="py-14 sm:py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+              {[
+                { value: "10,000+", label: "Cards created" },
+                { value: "50,000+", label: "QR scans" },
+                { value: "8",       label: "Free templates" },
+                { value: "100%",    label: "Free, forever" },
+              ].map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <p className="text-3xl font-extrabold text-gray-900 sm:text-4xl">{value}</p>
+                  <p className="mt-1 text-sm text-gray-500">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── Features ── */}
         <section id="features" className="py-24 sm:py-32">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -347,6 +329,13 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Template showcase ── */}
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <TemplateShowcase />
+          </div>
+        </section>
+
         {/* ── Testimonials ── */}
         <section id="testimonials" className="py-24 sm:py-32">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -356,78 +345,7 @@ export default function LandingPage() {
                 People love going paperless
               </h2>
             </div>
-
-            <div className="grid gap-6 sm:grid-cols-3">
-              {TESTIMONIALS.map(({ name, role, company, avatar, color, text, rating }) => (
-                <div
-                  key={name}
-                  className="flex flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
-                >
-                  <StarRating count={rating} />
-                  <p className="mt-4 flex-1 text-sm text-gray-600 leading-relaxed">
-                    &ldquo;{text}&rdquo;
-                  </p>
-                  <div className="mt-6 flex items-center gap-3 border-t border-gray-50 pt-5">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-xs font-bold text-white`}>
-                      {avatar}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{name}</p>
-                      <p className="text-xs text-gray-400">{role} · {company}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Pricing — it's free ── */}
-        <section className="bg-gradient-to-b from-gray-50 to-white py-24 sm:py-32">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="mx-auto max-w-2xl text-center mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600 mb-3">Pricing</p>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Simple pricing — it&apos;s free
-              </h2>
-              <p className="mt-4 text-gray-500 text-lg">No plans. No tiers. No limits. Everything is free, forever.</p>
-            </div>
-
-            <div className="mx-auto max-w-md">
-              <div className="rounded-3xl border-2 border-indigo-200 bg-white p-8 shadow-xl shadow-indigo-50 text-center relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 to-violet-500" />
-                <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 mb-6">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-600">Free forever</span>
-                </div>
-                <div className="text-6xl font-extrabold text-gray-900 mb-1">$0</div>
-                <p className="text-gray-400 text-sm mb-8">No credit card. No catch.</p>
-                <ul className="space-y-3 text-left mb-8">
-                  {[
-                    "Unlimited digital cards",
-                    "QR code for every card",
-                    "Shareable link",
-                    "Analytics & view tracking",
-                    "All templates included",
-                    "vCard (.vcf) download",
-                    "Social links",
-                    "Mobile app (coming soon)",
-                  ].map((feat) => (
-                    <li key={feat} className="flex items-center gap-3 text-sm text-gray-700">
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100">
-                        <Check className="h-3 w-3 text-green-600" />
-                      </div>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/signup"
-                  className="block w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 transition-colors text-center"
-                >
-                  Create your free card
-                </Link>
-              </div>
-            </div>
+            <TestimonialsSlider />
           </div>
         </section>
 
@@ -508,6 +426,19 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section id="faq" className="py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center mb-14">
+              <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600 mb-3">FAQ</p>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Common questions
+              </h2>
+            </div>
+            <FAQSection />
           </div>
         </section>
 
