@@ -1,0 +1,31 @@
+# My Digital Card
+
+> Free digital business cards. Create, manage, and share contact details via a personal QR code or link — your card stays in sync everywhere, forever.
+
+My Digital Card is a free web app for creating and sharing digital business cards. Each card has a unique URL and QR code; recipients view it instantly with no app install, and can save the contact straight to their phone via a downloadable vCard (.vcf). Card owners can update their details at any time and every shared link reflects the change immediately.
+
+## Key facts
+
+- Price: free, forever — no credit card, no trial period, no paywalled features.
+- Audience: professionals, freelancers, sales teams, recruiters, founders, and anyone who currently hands out paper business cards.
+- Templates: 8 professionally designed layouts (Classic, Modern, Minimal, Bold, Elegant, Sharp, Profile, Side Panel) with customisable colours.
+- Sharing: QR code, shareable URL, printable QR, vCard download.
+- Contact fields supported: name, job title, company, bio, email, phone, website, LinkedIn, Twitter/X, Instagram, Facebook, GitHub, YouTube, TikTok.
+- Analytics: each card shows total views, link clicks, and a 30-day view chart.
+- Multiple cards per user are supported; users can mark one as "primary".
+- Mobile apps for iOS and Android are planned; the web app already works on any mobile browser and is installable as a PWA.
+
+## Pages
+
+- [Home](/): Product overview, templates, FAQ.
+- [Sign up](/signup): Create a free account.
+- [Login](/login): Sign in to manage cards.
+- [Public card view](/u/[username]): Anyone can open a shared card without an account.
+
+## Frequently asked
+
+- Is it free? Yes — completely free, forever, with no credit card required.
+- Do recipients need an app? No. Cards open in any web browser.
+- Can I update a card after sharing it? Yes. Updates appear instantly on every shared link and QR code.
+- How do contacts get saved? A "Save Contact" button downloads a vCard (.vcf) that adds details straight to the phone's contacts app.
+- Can I have more than one card? Yes — unlimited cards per account, each with its own URL and QR code.
